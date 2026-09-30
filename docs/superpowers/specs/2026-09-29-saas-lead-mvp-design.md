@@ -1,7 +1,7 @@
 # SaaS Lead — Arquitetura do MVP
 
-**Data:** 2026-09-29  
-**Status:** proposta aprovada em conversa; aguardando revisão do documento  
+**Data:** 2026-09-29
+**Status:** proposta aprovada em conversa; aguardando revisão do documento
 **Produto:** SaaS horizontal de inteligência comercial e recuperação de oportunidades pelo WhatsApp oficial
 
 ## 1. Objetivo e critérios de sucesso
