@@ -58,6 +58,8 @@ model Organization {
   messages         Message[]
   aiAnalyses       AIAnalysis[]
   usageRecords     UsageRecord[]
+  opportunities    Opportunity[]
+  opportunityEvents OpportunityEvent[]
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 }
@@ -137,6 +139,7 @@ model Conversation {
   number          WhatsAppNumber @relation(fields: [numberId], references: [id], onDelete: Cascade)
   messages        Message[]
   aiAnalyses      AIAnalysis[]
+  opportunities   Opportunity[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -174,6 +177,41 @@ model UsageRecord {
 
   @@unique([organizationId, inputHash, provider])
   @@index([organizationId, createdAt])
+}
+
+model Opportunity {
+  id               String             @id @default(uuid()) @db.Uuid
+  organizationId   String             @db.Uuid
+  conversationId   String             @db.Uuid
+  deduplicationKey String
+  type             String
+  priority         String
+  status           String             @default("OPEN")
+  knownValue       Decimal?           @db.Decimal(14, 2)
+  ruleVersion      String
+  evidence         Json
+  detectedAt       DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conversation     Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  events           OpportunityEvent[]
+
+  @@unique([organizationId, deduplicationKey])
+  @@index([organizationId, status, priority, detectedAt])
+  @@index([organizationId, conversationId])
+}
+
+model OpportunityEvent {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  opportunityId  String       @db.Uuid
+  type           String
+  metadata       Json?
+  occurredAt     DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  opportunity    Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, opportunityId, occurredAt])
 }
 
 model Message {
