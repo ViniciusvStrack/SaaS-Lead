@@ -9,6 +9,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@saas-lead/config": "workspace:*",
+    "@saas-lead/observability": "workspace:*",
     "zod": "4.6.5"
   }
 }

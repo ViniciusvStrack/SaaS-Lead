@@ -9,6 +9,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@saas-lead/config": "workspace:*",
+    "@saas-lead/observability": "workspace:*",
     "@nestjs/common": "12.1.2",
     "@nestjs/core": "12.1.2",
     "@nestjs/platform-express": "12.1.2",
