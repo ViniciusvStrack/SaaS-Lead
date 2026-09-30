@@ -1,0 +1,2 @@
+import type {InMemorySendStore,OutboundStatus} from "./send-message.processor.js";
+export class ReconcileMessageProcessor{constructor(private readonly store:InMemorySendStore){}process(event:{organizationId:string;externalMessageId:string;externalEventId:string;status:OutboundStatus}){const record=this.store.findExternal(event.organizationId,event.externalMessageId);if(record)this.store.reconcile(event.externalEventId,record,event.status);}}

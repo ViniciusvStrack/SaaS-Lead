@@ -13,6 +13,7 @@
     "@saas-lead/config": "workspace:*",
     "@saas-lead/contracts": "workspace:*",
     "@saas-lead/observability": "workspace:*",
+    "@saas-lead/policy": "workspace:*",
     "zod": "4.6.5"
   }
 }

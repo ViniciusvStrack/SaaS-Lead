@@ -6,9 +6,9 @@ const conversations = [
   ["AS", "Ana Souza", "Vou conversar com meu sócio e retorno.", "1 h", "amber"],
 ];
 const opportunities = [
-  ["Proposta sem retorno", "Lucas Costa", "R$ 4.900", "Alta", "orange"],
-  ["Lead aguardando resposta", "Marina Rocha", "A qualificar", "Urgente", "red"],
-  ["Conversa esfriando", "Ana Souza", "A qualificar", "Média", "purple"],
+  ["opp-1", "Proposta sem retorno", "Lucas Costa", "R$ 4.900", "Alta", "orange"],
+  ["opp-2", "Lead aguardando resposta", "Marina Rocha", "A qualificar", "Urgente", "red"],
+  ["opp-3", "Conversa esfriando", "Ana Souza", "A qualificar", "Média", "purple"],
 ];
 
 const Icon = ({ children }: { children: string }) => <span className="icon" aria-hidden="true">{children}</span>;
@@ -33,7 +33,7 @@ export default function HomePage() {
         <Metric title="Oportunidades ativas" value="5" note="2 com alta prioridade" trend="+3" color="violet" />
         <Metric title="Valor conhecido" value="R$ 18,4 mil" note="Em oportunidades identificadas" trend="Este mês" color="green" />
       </section>
-      <section className="focus-card"><div className="section-heading"><div><span className="section-icon">✦</span><span><h2>Prioridades de hoje</h2><p>Oportunidades identificadas por regras e sinais de IA</p></span></div><Link href="/opportunities">Ver todas →</Link></div><div className="opportunity-list">{opportunities.map(([label,company,value,priority,color])=><article className="opportunity-row" key={company}><i className={`dot ${color}`} /><span><strong>{label}</strong><small>{company}</small></span><span className="opportunity-value"><small>Valor conhecido</small><strong>{value}</strong></span><b className={`tag ${color}`}>{priority}</b><button aria-label={`Abrir ${company}`}>›</button></article>)}</div></section>
+      <section className="focus-card"><div className="section-heading"><div><span className="section-icon">✦</span><span><h2>Prioridades de hoje</h2><p>Oportunidades identificadas por regras e sinais de IA</p></span></div><Link href="/opportunities">Ver todas →</Link></div><div className="opportunity-list">{opportunities.map(([id,label,company,value,priority,color])=><article className="opportunity-row" key={company}><i className={`dot ${color}`} /><span><strong>{label}</strong><small>{company}</small></span><span className="opportunity-value"><small>Valor conhecido</small><strong>{value}</strong></span><b className={`tag ${color}`}>{priority}</b><Link aria-label={`Abrir ${company}`} href={`/opportunities/${id}`}>›</Link></article>)}</div></section>
       <section className="lower-grid" id="conversas"><article className="panel"><div className="panel-title"><div><h2>Conversas recentes</h2><p>Atualizadas em tempo real</p></div><button>Ver caixa de entrada</button></div>{conversations.map(([initials,name,message,time,color])=><div className="conversation" key={name}><span className={`avatar ${color}`}>{initials}</span><span><strong>{name}</strong><p>{message}</p></span><time>{time}</time></div>)}</article><article className="panel pulse" id="analytics"><div className="panel-title"><div><h2>Pulso comercial</h2><p>Últimos 7 dias</p></div><span className="live"><i/>Ao vivo</span></div><div className="donut"><span><strong>72%</strong><small>respondidas</small></span></div><div className="pulse-stats"><span><i className="blue"/><b>31</b><small>Recebidas</small></span><span><i/><b>22</b><small>Respondidas</small></span></div></article></section>
     </main>
   </div>;

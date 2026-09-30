@@ -60,6 +60,12 @@ model Organization {
   usageRecords     UsageRecord[]
   opportunities    Opportunity[]
   opportunityEvents OpportunityEvent[]
+  consentRecords    ConsentRecord[]
+  messageTemplates  MessageTemplate[]
+  aiSuggestions     AISuggestion[]
+  policyDecisions   PolicyDecision[]
+  outboundMessages  OutboundMessage[]
+  outboundEvents    OutboundMessageEvent[]
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 }
@@ -119,6 +125,7 @@ model Contact {
   displayName       String?
   organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   conversations     Conversation[]
+  consentRecords    ConsentRecord[]
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
@@ -140,6 +147,7 @@ model Conversation {
   messages        Message[]
   aiAnalyses      AIAnalysis[]
   opportunities   Opportunity[]
+  outboundMessages OutboundMessage[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -195,6 +203,8 @@ model Opportunity {
   organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   conversation     Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   events           OpportunityEvent[]
+  suggestions      AISuggestion[]
+  outboundMessages OutboundMessage[]
 
   @@unique([organizationId, deduplicationKey])
   @@index([organizationId, status, priority, detectedAt])
@@ -212,6 +222,110 @@ model OpportunityEvent {
   opportunity    Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, opportunityId, occurredAt])
+}
+
+model ConsentRecord {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  contactId      String       @db.Uuid
+  channel        String       @default("WHATSAPP")
+  status         String
+  source         String
+  capturedAt     DateTime
+  revokedAt      DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, contactId, channel, capturedAt])
+}
+
+model MessageTemplate {
+  id                 String       @id @default(uuid()) @db.Uuid
+  organizationId     String       @db.Uuid
+  externalTemplateId String
+  name               String
+  category           String
+  language           String
+  status             String
+  components         Json
+  syncedAt           DateTime
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, externalTemplateId])
+  @@index([organizationId, status])
+}
+
+model AISuggestion {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  opportunityId  String       @db.Uuid
+  analysisId     String?      @db.Uuid
+  content        String
+  editedContent  String?
+  status         String       @default("DRAFT")
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  opportunity    Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, opportunityId, createdAt])
+}
+
+model OutboundMessage {
+  id                      String                 @id @default(uuid()) @db.Uuid
+  organizationId          String                 @db.Uuid
+  conversationId          String                 @db.Uuid
+  opportunityId           String?                @db.Uuid
+  suggestionId            String?                @db.Uuid
+  idempotencyKey          String
+  currentPolicyDecisionId String?                @db.Uuid
+  status                  String                 @default("PENDING_APPROVAL")
+  content                 String
+  contentHash             String
+  templateId              String?                @db.Uuid
+  externalMessageId       String?
+  scheduledAt             DateTime?
+  sentAt                  DateTime?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  organization            Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conversation            Conversation           @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  opportunity             Opportunity?           @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  policyDecisions         PolicyDecision[]
+  events                  OutboundMessageEvent[]
+
+  @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, externalMessageId])
+  @@index([organizationId, status, createdAt])
+}
+
+model PolicyDecision {
+  id                String           @id @default(uuid()) @db.Uuid
+  organizationId    String           @db.Uuid
+  outboundMessageId String?          @db.Uuid
+  decision          String
+  reasons           Json
+  policyVersion     String
+  contextSnapshot   Json
+  createdAt         DateTime         @default(now())
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  outboundMessage   OutboundMessage? @relation(fields: [outboundMessageId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, outboundMessageId, createdAt])
+}
+
+model OutboundMessageEvent {
+  id                String          @id @default(uuid()) @db.Uuid
+  organizationId    String          @db.Uuid
+  outboundMessageId String          @db.Uuid
+  externalEventId   String
+  status            String
+  payload            Json?
+  occurredAt         DateTime        @default(now())
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  outboundMessage   OutboundMessage @relation(fields: [outboundMessageId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, externalEventId])
+  @@index([organizationId, outboundMessageId, occurredAt])
 }
 
 model Message {
