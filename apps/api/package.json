@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@saas-lead/config": "workspace:*",
+    "@saas-lead/contracts": "workspace:*",
     "@saas-lead/database": "workspace:*",
     "@saas-lead/observability": "workspace:*",
     "@nestjs/common": "12.1.2",

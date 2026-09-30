@@ -44,6 +44,9 @@ importers:
       '@saas-lead/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@saas-lead/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@saas-lead/database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -91,6 +94,9 @@ importers:
       '@saas-lead/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@saas-lead/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@saas-lead/observability':
         specifier: workspace:*
         version: link:../../packages/observability

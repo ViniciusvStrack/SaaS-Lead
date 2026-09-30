@@ -53,6 +53,9 @@ model Organization {
   whatsappAccounts WhatsAppAccount[]
   whatsappNumbers  WhatsAppNumber[]
   webhookEvents    WebhookEvent[]
+  contacts         Contact[]
+  conversations    Conversation[]
+  messages         Message[]
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 }
@@ -81,6 +84,7 @@ model WhatsAppNumber {
   organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   account         WhatsAppAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
   webhookEvents   WebhookEvent[]
+  conversations   Conversation[]
   createdAt       DateTime        @default(now())
 
   @@index([organizationId, status])
@@ -98,9 +102,62 @@ model WebhookEvent {
   processedAt    DateTime?
   organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   number         WhatsAppNumber @relation(fields: [numberId], references: [id], onDelete: Cascade)
+  message        Message?
 
   @@index([status, receivedAt])
   @@index([organizationId, receivedAt])
+}
+
+model Contact {
+  id                String         @id @default(uuid()) @db.Uuid
+  organizationId    String         @db.Uuid
+  externalContactId String
+  displayName       String?
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conversations     Conversation[]
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([organizationId, externalContactId])
+  @@index([organizationId, displayName])
+}
+
+model Conversation {
+  id              String         @id @default(uuid()) @db.Uuid
+  organizationId  String         @db.Uuid
+  contactId       String         @db.Uuid
+  numberId        String         @db.Uuid
+  status          String         @default("OPEN")
+  lastMessageBody String?
+  lastMessageAt   DateTime?
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact         Contact        @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  number          WhatsAppNumber @relation(fields: [numberId], references: [id], onDelete: Cascade)
+  messages        Message[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([organizationId, numberId, contactId])
+  @@index([organizationId, lastMessageAt])
+}
+
+model Message {
+  id                String       @id @default(uuid()) @db.Uuid
+  organizationId    String       @db.Uuid
+  conversationId    String       @db.Uuid
+  webhookEventId    String?      @unique @db.Uuid
+  externalMessageId String
+  direction         String
+  body              String?
+  payload           Json?
+  occurredAt        DateTime
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conversation      Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  webhookEvent      WebhookEvent? @relation(fields: [webhookEventId], references: [id], onDelete: SetNull)
+  createdAt         DateTime     @default(now())
+
+  @@unique([organizationId, externalMessageId])
+  @@index([organizationId, conversationId, occurredAt])
 }
 
 model OrganizationMember {
