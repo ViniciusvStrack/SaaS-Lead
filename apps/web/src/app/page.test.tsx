@@ -12,6 +12,8 @@ describe("commercial dashboard", () => {
     expect(html).toContain("Oportunidades ativas");
     expect(html).toContain("Conversas recentes");
     expect(html).toContain('href="/opportunities/opp-1"');
+    expect(html).toContain('href="/onboarding"');
+    expect(html).toContain('href="/settings"');
     expect(html).not.toContain("Receita recuperada");
   });
 });

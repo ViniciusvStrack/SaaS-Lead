@@ -23,11 +23,11 @@ export default function HomePage() {
         <Link className="nav-item" href="/opportunities"><Icon>✦</Icon>Oportunidades<em className="accent">5</em></Link>
         <Link className="nav-item" href="#analytics"><Icon>⌁</Icon>Analytics</Link>
       </nav>
-      <div className="sidebar-bottom"><Link className="nav-item" href="#configuracoes"><Icon>⚙</Icon>Configurações</Link><div className="profile"><span className="avatar dark">VS</span><span><strong>Vinicius Strack</strong><small>Administrador</small></span><button>•••</button></div></div>
+      <div className="sidebar-bottom"><Link className="nav-item" href="/settings"><Icon>⚙</Icon>Configurações</Link><div className="profile"><span className="avatar dark">VS</span><span><strong>Vinicius Strack</strong><small>Administrador</small></span><button>•••</button></div></div>
     </aside>
     <main className="dashboard">
       <header className="topbar"><div><p className="eyebrow">QUARTA-FEIRA, 30 DE SETEMBRO</p><h1>Boa tarde, Vinicius.</h1><p className="subtitle">Aqui está o que merece sua atenção hoje.</p></div><div className="top-actions"><label className="search"><span>⌕</span><input aria-label="Buscar" placeholder="Buscar" /></label><button className="notify" aria-label="Notificações">♧<i /></button></div></header>
-      <div className="demo-notice"><span>Dados demonstrativos</span> Conecte seu WhatsApp para acompanhar conversas reais.<button>Configurar conexão →</button></div>
+      <div className="demo-notice"><span>Dados demonstrativos</span> Conecte seu WhatsApp para acompanhar conversas reais.<Link href="/onboarding" style={{marginLeft:"auto",color:"#2670d5",fontWeight:650,textDecoration:"none"}}>Configurar conexão →</Link></div>
       <section className="metrics" aria-label="Indicadores">
         <Metric title="Conversas ativas" value="24" note="8 aguardando sua equipe" trend="+12%" color="blue" />
         <Metric title="Oportunidades ativas" value="5" note="2 com alta prioridade" trend="+3" color="violet" />
