@@ -50,8 +50,57 @@ model Organization {
   memberships      OrganizationMember[]
   businessSettings BusinessSettings?
   auditLogs         AuditLog[]
+  whatsappAccounts WhatsAppAccount[]
+  whatsappNumbers  WhatsAppNumber[]
+  webhookEvents    WebhookEvent[]
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
+}
+
+model WhatsAppAccount {
+  id                  String           @id @default(uuid()) @db.Uuid
+  organizationId      String           @db.Uuid
+  externalAccountId   String           @unique
+  credentialReference String
+  status              String           @default("ACTIVE")
+  organization        Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  numbers             WhatsAppNumber[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([organizationId, status])
+}
+
+model WhatsAppNumber {
+  id              String          @id @default(uuid()) @db.Uuid
+  organizationId  String          @db.Uuid
+  accountId       String          @db.Uuid
+  externalNumberId String         @unique
+  displayNumber   String?
+  status          String          @default("ACTIVE")
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  account         WhatsAppAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  webhookEvents   WebhookEvent[]
+  createdAt       DateTime        @default(now())
+
+  @@index([organizationId, status])
+}
+
+model WebhookEvent {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @db.Uuid
+  numberId       String         @db.Uuid
+  externalId     String         @unique
+  payload        Json
+  status         String         @default("PENDING")
+  attempts       Int            @default(0)
+  receivedAt     DateTime       @default(now())
+  processedAt    DateTime?
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  number         WhatsAppNumber @relation(fields: [numberId], references: [id], onDelete: Cascade)
+
+  @@index([status, receivedAt])
+  @@index([organizationId, receivedAt])
 }
 
 model OrganizationMember {

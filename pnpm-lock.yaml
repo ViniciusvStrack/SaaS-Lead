@@ -121,6 +121,8 @@ importers:
 
   packages/observability: {}
 
+  packages/whatsapp: {}
+
   spikes/meta-smoke: {}
 
 packages:
