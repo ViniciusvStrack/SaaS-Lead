@@ -11,7 +11,8 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "db:migrate:test": "pnpm --filter @saas-lead/database db:migrate:test"
+    "db:migrate:test": "pnpm --filter @saas-lead/database db:migrate:test",
+    "eval:conversation-analysis": "node evals/conversation-analysis/run.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

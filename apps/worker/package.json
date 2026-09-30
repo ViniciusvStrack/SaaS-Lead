@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@saas-lead/ai": "workspace:*",
     "@saas-lead/config": "workspace:*",
     "@saas-lead/contracts": "workspace:*",
     "@saas-lead/observability": "workspace:*",

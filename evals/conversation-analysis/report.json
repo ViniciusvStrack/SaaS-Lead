@@ -1,0 +1,7 @@
+{
+  "generatedAt": "2026-09-30T21:19:25.840Z",
+  "mode": "dataset-validation-only",
+  "cases": 6,
+  "failures": [],
+  "note": "No accuracy claim is produced until a configured model is run against this versioned dataset."
+}

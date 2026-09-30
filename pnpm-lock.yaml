@@ -41,6 +41,9 @@ importers:
       '@nestjs/platform-express':
         specifier: 12.1.2
         version: 12.1.2(@nestjs/common@12.1.2(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@12.1.2)
+      '@saas-lead/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@saas-lead/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -91,6 +94,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@saas-lead/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@saas-lead/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -100,6 +106,12 @@ importers:
       '@saas-lead/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+
+  packages/ai:
+    dependencies:
       zod:
         specifier: 4.6.5
         version: 4.6.5
