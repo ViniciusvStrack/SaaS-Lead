@@ -1,9 +1,11 @@
 import { Module } from "@nestjs/common";
 
 import { HealthController } from "./health.controller.js";
+import { OrganizationsModule } from "./modules/organizations/organizations.module.js";
 import { DATABASE_PROBE, ReadinessService, REDIS_PROBE } from "./readiness.service.js";
 
 @Module({
+  imports: [OrganizationsModule],
   controllers: [HealthController],
   providers: [
     ReadinessService,

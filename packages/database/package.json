@@ -2,12 +2,22 @@
   "name": "@saas-lead/database",
   "private": true,
   "type": "module",
-  "exports": "./src/index.ts",
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "lint": "eslint src",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "dependencies": { "@prisma/client": "7.10.0" },
+  "scripts": {
+    "build": "prisma generate --schema prisma/schema.prisma && tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:generate": "prisma generate --schema prisma/schema.prisma",
+    "db:migrate:test": "prisma validate --schema prisma/schema.prisma && prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script"
+  },
+  "dependencies": {
+    "@prisma/client": "7.10.0",
+    "@saas-lead/contracts": "workspace:*"
+  },
   "devDependencies": { "prisma": "7.10.0" }
 }

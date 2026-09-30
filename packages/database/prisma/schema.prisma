@@ -5,3 +5,96 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  AGENT
+}
+
+enum MemberStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+model User {
+  id          String               @id @default(uuid()) @db.Uuid
+  email       String               @unique
+  name        String
+  status      UserStatus           @default(ACTIVE)
+  memberships OrganizationMember[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model Organization {
+  id               String               @id @default(uuid()) @db.Uuid
+  name             String
+  slug             String               @unique
+  status           OrganizationStatus   @default(ACTIVE)
+  timezone         String               @default("America/Sao_Paulo")
+  locale           String               @default("pt-BR")
+  memberships      OrganizationMember[]
+  businessSettings BusinessSettings?
+  auditLogs         AuditLog[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  userId         String       @db.Uuid
+  role           MemberRole
+  status         MemberStatus @default(ACTIVE)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, userId])
+  @@index([userId, status])
+}
+
+model BusinessSettings {
+  id                 String       @id @default(uuid()) @db.Uuid
+  organizationId     String       @unique @db.Uuid
+  industry           String?
+  description        String?
+  tone               String?
+  businessHours      Json?
+  allowedClaims      Json?
+  discountPolicy     Json?
+  commercialPolicies Json?
+  goals              Json?
+  version            Int          @default(1)
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  actorType       String
+  actorId         String?
+  action          String
+  resourceType    String
+  resourceId      String?
+  metadata        Json?
+  occurredAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, occurredAt])
+  @@index([organizationId, resourceType, resourceId])
+}
