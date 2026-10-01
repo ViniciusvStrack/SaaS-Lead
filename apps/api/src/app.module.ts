@@ -3,10 +3,11 @@ import { Module } from "@nestjs/common";
 import { HealthController } from "./health.controller.js";
 import { createConnectivityProbe } from "./connectivity-probe.js";
 import { OrganizationsModule } from "./modules/organizations/organizations.module.js";
+import { OpportunitiesModule } from "./modules/opportunities/opportunities.module.js";
 import { DATABASE_PROBE, ReadinessService, REDIS_PROBE } from "./readiness.service.js";
 
 @Module({
-  imports: [OrganizationsModule],
+  imports: [OrganizationsModule, OpportunitiesModule],
   controllers: [HealthController],
   providers: [
     ReadinessService,

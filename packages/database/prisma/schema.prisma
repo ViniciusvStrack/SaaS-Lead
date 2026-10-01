@@ -36,6 +36,7 @@ model User {
   name        String
   status      UserStatus           @default(ACTIVE)
   memberships OrganizationMember[]
+  sessions    Session[]
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
 }
@@ -48,6 +49,7 @@ model Organization {
   timezone         String               @default("America/Sao_Paulo")
   locale           String               @default("pt-BR")
   memberships      OrganizationMember[]
+  sessions         Session[]
   businessSettings BusinessSettings?
   auditLogs         AuditLog[]
   whatsappAccounts WhatsAppAccount[]
@@ -72,6 +74,20 @@ model Organization {
   retentionPolicy    RetentionPolicy?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
+}
+
+model Session {
+  tokenHash      String       @id
+  userId         String       @db.Uuid
+  organizationId String       @db.Uuid
+  role           MemberRole
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([organizationId, userId])
 }
 
 model WhatsAppAccount {
