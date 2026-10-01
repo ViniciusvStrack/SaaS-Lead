@@ -21,7 +21,7 @@ export default function HomePage() {
         <Link className="nav-item active" href="/"><Icon>⌘</Icon>Visão geral</Link>
         <Link className="nav-item" href="#conversas"><Icon>◌</Icon>Conversas<em>8</em></Link>
         <Link className="nav-item" href="/opportunities"><Icon>✦</Icon>Oportunidades<em className="accent">5</em></Link>
-        <Link className="nav-item" href="#analytics"><Icon>⌁</Icon>Analytics</Link>
+        <Link className="nav-item" href="/activity"><Icon>⌁</Icon>Resultados</Link>
       </nav>
       <div className="sidebar-bottom"><Link className="nav-item" href="/settings"><Icon>⚙</Icon>Configurações</Link><div className="profile"><span className="avatar dark">VS</span><span><strong>Vinicius Strack</strong><small>Administrador</small></span><button>•••</button></div></div>
     </aside>

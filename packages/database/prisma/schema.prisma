@@ -67,6 +67,9 @@ model Organization {
   outboundMessages  OutboundMessage[]
   outboundEvents    OutboundMessageEvent[]
   subscriptions     Subscription[]
+  commercialOutcomes CommercialOutcome[]
+  privacyRequests    PrivacyRequest[]
+  retentionPolicy    RetentionPolicy?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 }
@@ -447,4 +450,48 @@ model AuditLog {
 
   @@index([organizationId, occurredAt])
   @@index([organizationId, resourceType, resourceId])
+}
+
+model CommercialOutcome {
+  id                String       @id @default(uuid()) @db.Uuid
+  organizationId    String       @db.Uuid
+  opportunityId     String       @db.Uuid
+  outboundMessageId String?      @db.Uuid
+  status            String
+  value             Decimal?     @db.Decimal(14, 2)
+  currency          String       @default("BRL")
+  evidenceSource    String?
+  evidenceRef       String?
+  occurredAt        DateTime     @default(now())
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status, occurredAt])
+  @@index([organizationId, opportunityId])
+}
+
+model PrivacyRequest {
+  id              String       @id @default(uuid()) @db.Uuid
+  organizationId  String       @db.Uuid
+  requestKey      String
+  subjectType     String
+  subjectId       String
+  action          String
+  status          String       @default("QUEUED")
+  legalHoldReason String?
+  requestedAt     DateTime     @default(now())
+  completedAt     DateTime?
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, requestKey])
+  @@index([organizationId, status, requestedAt])
+}
+
+model RetentionPolicy {
+  id                String       @id @default(uuid()) @db.Uuid
+  organizationId    String       @unique @db.Uuid
+  messageDays       Int          @default(365)
+  auditDays         Int          @default(1825)
+  policyVersion     Int          @default(1)
+  updatedAt         DateTime     @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
