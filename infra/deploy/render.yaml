@@ -7,7 +7,7 @@ services:
     region: oregon
     plan: 0.5c-512mb
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
-    preDeployCommand: pnpm --filter @saas-lead/database exec prisma migrate deploy --schema prisma/schema.prisma
+    preDeployCommand: pnpm --filter @saas-lead/database exec prisma migrate deploy --config prisma.config.ts
     startCommand: API_PORT=$PORT node apps/api/dist/src/main.js
     healthCheckPath: /ready
     autoDeployTrigger: off

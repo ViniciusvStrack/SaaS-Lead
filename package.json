@@ -12,6 +12,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:system": "vitest run tests/system",
+    "db:migrate:deploy": "pnpm --filter @saas-lead/database db:migrate:deploy",
     "db:migrate:test": "pnpm --filter @saas-lead/database db:migrate:test",
     "eval:conversation-analysis": "node evals/conversation-analysis/run.mjs"
   },

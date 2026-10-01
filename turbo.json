@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["DATABASE_URL", "TEST_DATABASE_URL", "REDIS_URL", "META_GRAPH_API_VERSION"],
   "tasks": {
     "dev": {
       "cache": false,

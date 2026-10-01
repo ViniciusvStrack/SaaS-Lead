@@ -13,7 +13,7 @@
     "render-blueprint-validated",
     "database-restore-executed",
     "tenant-isolation-staging",
-    "worker-queue-runtime-connected",
+    "all-worker-queue-handlers-connected",
     "alerts-delivered",
     "meta-real-smoke-test",
     "legal-review-signed",

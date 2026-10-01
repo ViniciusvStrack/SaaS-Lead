@@ -16,6 +16,34 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_lead
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_lead
+      REDIS_URL: redis://localhost:6379
+      META_GRAPH_API_VERSION: v23.0
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: saas_lead
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d saas_lead"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
@@ -24,6 +52,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate:deploy
       - run: pnpm db:migrate:test
       - run: pnpm lint
       - run: pnpm typecheck
