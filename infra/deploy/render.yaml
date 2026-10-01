@@ -1,0 +1,89 @@
+# Validate with: render blueprints validate infra/deploy/render.yaml
+# Keep autoDeployTrigger off until every production gate in the runbook is signed.
+services:
+  - type: web
+    runtime: node
+    name: saas-lead-staging-api
+    region: oregon
+    plan: 0.5c-512mb
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    preDeployCommand: pnpm --filter @saas-lead/database exec prisma migrate deploy --schema prisma/schema.prisma
+    startCommand: API_PORT=$PORT node apps/api/dist/src/main.js
+    healthCheckPath: /ready
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: saas-lead-staging-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: saas-lead-staging-redis
+          property: connectionString
+      - key: META_GRAPH_API_VERSION
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+
+  - type: web
+    runtime: node
+    name: saas-lead-staging-web
+    region: oregon
+    plan: 0.5c-512mb
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @saas-lead/web build
+    startCommand: pnpm --filter @saas-lead/web exec next start -p $PORT
+    healthCheckPath: /
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_BASE_URL
+        sync: false
+
+  - type: worker
+    runtime: node
+    name: saas-lead-staging-worker
+    region: oregon
+    plan: 0.5c-512mb
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: node apps/worker/dist/src/main.js
+    autoDeployTrigger: off
+    maxShutdownDelaySeconds: 60
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: saas-lead-staging-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: saas-lead-staging-redis
+          property: connectionString
+      - key: META_GRAPH_API_VERSION
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+
+  - type: keyvalue
+    name: saas-lead-staging-redis
+    region: oregon
+    plan: 256mb
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
+    persistenceMode: journal-snapshot
+
+databases:
+  - name: saas-lead-staging-db
+    region: oregon
+    plan: 0.5c-1g
+    postgresMajorVersion: "17"
+    databaseName: saas_lead_staging
+    user: saas_lead
+    ipAllowList: []

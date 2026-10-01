@@ -1,0 +1,22 @@
+{
+  "status": "DECLARED_NOT_PROVISIONED",
+  "provider": "render",
+  "region": "oregon",
+  "tls": true,
+  "managedDatabase": true,
+  "managedRedis": true,
+  "secretsManager": true,
+  "backups": true,
+  "rollback": true,
+  "productionApproved": false,
+  "requiredEvidence": [
+    "render-blueprint-validated",
+    "database-restore-executed",
+    "tenant-isolation-staging",
+    "worker-queue-runtime-connected",
+    "alerts-delivered",
+    "meta-real-smoke-test",
+    "legal-review-signed",
+    "beta-results-reviewed"
+  ]
+}
