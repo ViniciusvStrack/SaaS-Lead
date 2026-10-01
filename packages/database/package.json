@@ -11,13 +11,20 @@
   "scripts": {
     "build": "prisma generate --schema prisma/schema.prisma && tsc -p tsconfig.json",
     "lint": "eslint src",
+    "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "db:generate": "prisma generate --schema prisma/schema.prisma",
     "db:migrate:test": "prisma validate --schema prisma/schema.prisma && prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
-    "@saas-lead/contracts": "workspace:*"
+    "@saas-lead/contracts": "workspace:*",
+    "pg": "8.16.3"
   },
-  "devDependencies": { "prisma": "7.10.0" }
+  "devDependencies": {
+    "@types/pg": "8.15.5",
+    "prisma": "7.10.0",
+    "vitest": "5.0.3"
+  }
 }
