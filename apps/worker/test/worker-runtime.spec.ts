@@ -40,8 +40,14 @@ describe("WorkerRuntime", () => {
 });
 
 describe("createWorkerHandlers", () => {
-  it("routes a valid normalize job and rejects malformed queue data", async () => {
+  it("enqueues normalized conversations, routes analysis and rejects malformed queue data", async () => {
     const received: unknown[] = [];
+    const analyses: unknown[] = [];
+    const enqueued: unknown[] = [];
+    const analysisResult = {
+      analysis: { intent: "PURCHASE" as const, stage: "READY_TO_BUY" as const, sentiment: "NEUTRAL" as const, urgency: 0.7, summary: "Lead pronto.", suggestedNextAction: "Responder.", commercial: { discountRequested: false, discountAllowed: false, allowedDiscountPercent: null } },
+      cached: false,
+    };
     const snapshot = {
       conversationId: "conversation-1",
       organizationId: "org-a" as OrganizationId,
@@ -49,10 +55,17 @@ describe("createWorkerHandlers", () => {
       lastMessageBody: "Olá",
       lastMessageAt: new Date("2026-10-01T12:00:00.000Z")
     };
-    const handlers = createWorkerHandlers({ process: async (job) => { received.push(job); return snapshot; } });
+    const handlers = createWorkerHandlers(
+      { process: async (job) => { received.push(job); return snapshot; } },
+      { process: async (job) => { analyses.push(job); return analysisResult; } },
+      { add: async (job) => { enqueued.push(job); } },
+    );
 
     await expect(handlers["webhook.normalize"]!({ webhookEventId: "webhook-1", organizationId: "org-a" })).resolves.toEqual(snapshot);
+    await expect(handlers["conversation.analyze"]!({ conversationId: "conversation-1", organizationId: "org-a", sourceWebhookEventId: "webhook-1" })).resolves.toEqual(analysisResult);
     await expect(handlers["webhook.normalize"]!({ webhookEventId: "webhook-1" })).rejects.toThrow();
     expect(received).toEqual([{ webhookEventId: "webhook-1", organizationId: "org-a" }]);
+    expect(enqueued).toEqual([{ conversationId: "conversation-1", organizationId: "org-a", sourceWebhookEventId: "webhook-1" }]);
+    expect(analyses).toEqual([{ conversationId: "conversation-1", organizationId: "org-a", sourceWebhookEventId: "webhook-1" }]);
   });
 });
