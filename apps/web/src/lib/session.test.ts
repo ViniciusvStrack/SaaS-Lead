@@ -8,7 +8,7 @@ describe("requireSession", () => {
       userId: "user-a",
       organizationId: "org-a",
       role: "ADMIN",
-      expiresAt: "2026-10-01T12:00:00.000Z",
+      expiresAt: "2099-10-01T12:00:00.000Z",
     }));
 
     expect(session).toEqual(expect.objectContaining({ organizationId: "org-a", role: "ADMIN" }));

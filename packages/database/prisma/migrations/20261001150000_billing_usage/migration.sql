@@ -1,0 +1,27 @@
+ALTER TABLE "UsageRecord" ALTER COLUMN "inputHash" DROP NOT NULL;
+ALTER TABLE "UsageRecord" ALTER COLUMN "provider" DROP NOT NULL;
+ALTER TABLE "UsageRecord" ALTER COLUMN "model" DROP NOT NULL;
+ALTER TABLE "UsageRecord" ALTER COLUMN "inputTokens" SET DEFAULT 0;
+ALTER TABLE "UsageRecord" ALTER COLUMN "outputTokens" SET DEFAULT 0;
+ALTER TABLE "UsageRecord" ADD COLUMN "metric" TEXT NOT NULL DEFAULT 'ai.tokens';
+ALTER TABLE "UsageRecord" ADD COLUMN "quantity" INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE "UsageRecord" ADD COLUMN "unitCost" DECIMAL(12,6);
+ALTER TABLE "UsageRecord" ADD COLUMN "sourceType" TEXT NOT NULL DEFAULT 'AIAnalysis';
+ALTER TABLE "UsageRecord" ADD COLUMN "sourceId" TEXT;
+ALTER TABLE "UsageRecord" ADD COLUMN "occurredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+UPDATE "UsageRecord" SET "sourceId" = COALESCE("inputHash", "id"::text);
+ALTER TABLE "UsageRecord" ALTER COLUMN "sourceId" SET NOT NULL;
+CREATE UNIQUE INDEX "UsageRecord_organizationId_metric_sourceType_sourceId_key" ON "UsageRecord"("organizationId","metric","sourceType","sourceId");
+
+CREATE TABLE "Plan" ("id" UUID NOT NULL,"code" TEXT NOT NULL,"name" TEXT NOT NULL,"status" TEXT NOT NULL DEFAULT 'ACTIVE',"entitlements" JSONB NOT NULL,"pricingConfig" JSONB NOT NULL,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL,CONSTRAINT "Plan_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "Subscription" ("id" UUID NOT NULL,"organizationId" UUID NOT NULL,"planId" UUID NOT NULL,"provider" TEXT NOT NULL,"externalCustomerId" TEXT NOT NULL,"externalSubscriptionId" TEXT NOT NULL,"creationIdempotencyKey" TEXT NOT NULL,"status" TEXT NOT NULL,"trialEndsAt" TIMESTAMP(3),"currentPeriodEndsAt" TIMESTAMP(3),"lastEventAt" TIMESTAMP(3),"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL,CONSTRAINT "Subscription_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "BillingEvent" ("id" UUID NOT NULL,"provider" TEXT NOT NULL,"externalEventId" TEXT NOT NULL,"payloadRef" TEXT,"status" TEXT NOT NULL DEFAULT 'RECEIVED',"eventCreatedAt" TIMESTAMP(3) NOT NULL,"processedAt" TIMESTAMP(3),"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "BillingEvent_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "Plan_code_key" ON "Plan"("code");
+CREATE UNIQUE INDEX "Subscription_organizationId_provider_key" ON "Subscription"("organizationId","provider");
+CREATE UNIQUE INDEX "Subscription_provider_externalSubscriptionId_key" ON "Subscription"("provider","externalSubscriptionId");
+CREATE UNIQUE INDEX "Subscription_organizationId_creationIdempotencyKey_key" ON "Subscription"("organizationId","creationIdempotencyKey");
+CREATE INDEX "Subscription_organizationId_status_idx" ON "Subscription"("organizationId","status");
+CREATE UNIQUE INDEX "BillingEvent_provider_externalEventId_key" ON "BillingEvent"("provider","externalEventId");
+CREATE INDEX "BillingEvent_status_createdAt_idx" ON "BillingEvent"("status","createdAt");
+ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_planId_fkey" FOREIGN KEY ("planId") REFERENCES "Plan"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

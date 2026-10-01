@@ -4,3 +4,4 @@ export type { ConversationSnapshot, InboundMessageEvent } from "./events/inbound
 export type { OpportunityCandidate, OpportunityPriority, OpportunityType } from "./opportunities/opportunity.js";
 export { businessDays } from "./business-settings/business-settings.js";
 export type { BusinessDay, BusinessHoursPeriod, BusinessSettings, BusinessSettingsUpdate } from "./business-settings/business-settings.js";
+export type { BillingEventInput, BillingProvider, PlanContract, SubscriptionStatus, SubscriptionView, UsageInput } from "./billing/billing.js";
