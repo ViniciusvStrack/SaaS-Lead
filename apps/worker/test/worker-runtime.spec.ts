@@ -44,9 +44,11 @@ describe("createWorkerHandlers", () => {
     const received: unknown[] = [];
     const analyses: unknown[] = [];
     const enqueued: unknown[] = [];
+    const scheduled: unknown[] = [];
     const analysisResult = {
       analysis: { intent: "PURCHASE" as const, stage: "READY_TO_BUY" as const, sentiment: "NEUTRAL" as const, urgency: 0.7, summary: "Lead pronto.", suggestedNextAction: "Responder.", commercial: { discountRequested: false, discountAllowed: false, allowedDiscountPercent: null } },
       cached: false,
+      lastInboundAt: new Date("2026-10-01T12:00:00.000Z"),
     };
     const snapshot = {
       conversationId: "conversation-1",
@@ -59,6 +61,8 @@ describe("createWorkerHandlers", () => {
       { process: async (job) => { received.push(job); return snapshot; } },
       { process: async (job) => { analyses.push(job); return analysisResult; } },
       { add: async (job) => { enqueued.push(job); } },
+      { schedule: async (job, dueAt) => { scheduled.push({ job, dueAt }); } },
+      { process: async () => [] },
     );
 
     await expect(handlers["webhook.normalize"]!({ webhookEventId: "webhook-1", organizationId: "org-a" })).resolves.toEqual(snapshot);
@@ -67,5 +71,6 @@ describe("createWorkerHandlers", () => {
     expect(received).toEqual([{ webhookEventId: "webhook-1", organizationId: "org-a" }]);
     expect(enqueued).toEqual([{ conversationId: "conversation-1", organizationId: "org-a", sourceWebhookEventId: "webhook-1" }]);
     expect(analyses).toEqual([{ conversationId: "conversation-1", organizationId: "org-a", sourceWebhookEventId: "webhook-1" }]);
+    expect(scheduled).toEqual([{ job: { conversationId: "conversation-1", organizationId: "org-a", sourceWebhookEventId: "webhook-1" }, dueAt: new Date("2026-10-01T16:00:00.000Z") }]);
   });
 });

@@ -13,7 +13,7 @@ Render Blueprint com web, API, worker, PostgreSQL e Key Value gerenciados. TLS t
 1. Validar o Blueprint com Render CLI 2.7 ou superior.
 2. Criar um projeto de staging apontando para `infra/deploy/render.yaml`.
 3. Inserir `META_GRAPH_API_VERSION`, `META_APP_SECRET` e `API_BASE_URL` no painel; nunca em Git ou logs.
-4. Antes de sincronizar, conectar os handlers restantes de oportunidade, sugestão e envio. As filas `webhook.normalize` e `conversation.analyze` já consomem BullMQ e persistem seus resultados no PostgreSQL. A análise ativa é determinística e local, sem transmitir conversas a terceiros; ativar um provider externo exige configuração e revisão de privacidade explícitas. Produção continua bloqueada até todas as filas terem handlers e dead-letter validados.
+4. Antes de sincronizar, conectar os handlers restantes de sugestão e envio. As filas `webhook.normalize`, `conversation.analyze` e `opportunity.detect` já consomem BullMQ e persistem seus resultados no PostgreSQL. A detecção é agendada para quatro horas após uma mensagem comercial recebida e confirma no banco se ainda falta resposta. A análise ativa é determinística e local, sem transmitir conversas a terceiros; ativar um provider externo exige configuração e revisão de privacidade explícitas. Produção continua bloqueada até todas as filas terem handlers e dead-letter validados.
 5. Sincronizar o Blueprint e observar o `preDeployCommand` de migrations.
 6. Validar `/health/live` e `/health/ready`, depois executar `pnpm test:system` com providers fake.
 

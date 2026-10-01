@@ -33,4 +33,12 @@ describe("OpportunityEngine", () => {
     const input = { ...base, quoteSentAt: new Date("2026-09-27T10:00:00Z"), lastInboundAt: new Date("2026-09-27T09:00:00Z") };
     expect(engine.detect(input)[0]?.deduplicationKey).toBe(engine.detect(input)[0]?.deduplicationKey);
   });
+
+  it("does not classify a support conversation as a commercial lead", () => {
+    expect(engine.detect({ ...base, analysis: { intent: "SUPPORT", stage: "NEW", urgency: 0.7 }, lastInboundAt: new Date("2026-09-30T06:00:00Z") })).toEqual([]);
+  });
+
+  it("does not flag an unanswered lead after the company has replied", () => {
+    expect(engine.detect({ ...base, lastInboundAt: new Date("2026-09-30T06:00:00Z"), lastOutboundAt: new Date("2026-09-30T07:00:00Z") })).toEqual([]);
+  });
 });

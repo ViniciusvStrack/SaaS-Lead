@@ -36,7 +36,7 @@ export class PrismaAnalysisRuntime {
     this.processor = new AnalyzeConversationProcessor(provider, new PrismaAnalysisStore(database, options.providerName ?? "unspecified"), options.model);
   }
 
-  async process(job: AnalyzeConversationQueueJob): Promise<{ analysis: ConversationAnalysis; cached: boolean }> {
+  async process(job: AnalyzeConversationQueueJob): Promise<{ analysis: ConversationAnalysis; cached: boolean; lastInboundAt?: Date }> {
     const conversation = await this.database.conversation.findFirst({
       where: { id: job.conversationId, organizationId: job.organizationId },
       include: { messages: { orderBy: { occurredAt: "asc" } } },
@@ -55,6 +55,7 @@ export class PrismaAnalysisRuntime {
       },
       promptVersion: this.options.promptVersion,
     });
-    return { analysis: result.analysis, cached: result.cached };
+    const lastInboundAt = conversation.messages.filter((message) => message.direction === "INBOUND").at(-1)?.occurredAt;
+    return { analysis: result.analysis, cached: result.cached, ...(lastInboundAt ? { lastInboundAt } : {}) };
   }
 }
