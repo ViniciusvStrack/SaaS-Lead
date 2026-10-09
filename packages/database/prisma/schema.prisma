@@ -37,6 +37,7 @@ model User {
   status      UserStatus           @default(ACTIVE)
   memberships OrganizationMember[]
   sessions    Session[]
+  loginTokens AuthLoginToken[]
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
 }
@@ -50,6 +51,7 @@ model Organization {
   locale           String               @default("pt-BR")
   memberships      OrganizationMember[]
   sessions         Session[]
+  loginTokens      AuthLoginToken[]
   businessSettings BusinessSettings?
   auditLogs         AuditLog[]
   whatsappAccounts WhatsAppAccount[]
@@ -88,6 +90,20 @@ model Session {
 
   @@index([expiresAt])
   @@index([organizationId, userId])
+}
+
+model AuthLoginToken {
+  tokenHash      String       @id
+  userId         String       @db.Uuid
+  organizationId String       @db.Uuid
+  expiresAt      DateTime
+  consumedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId, organizationId, createdAt])
 }
 
 model WhatsAppAccount {
