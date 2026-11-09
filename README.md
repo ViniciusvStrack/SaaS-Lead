@@ -8,6 +8,8 @@ SaaS horizontal de inteligência comercial e recuperação de oportunidades via 
 - Corepack com pnpm 11.22.0
 - Docker com Compose v2
 
+Antes de instalar as dependências, use Node.js `24.12.0` conforme os arquivos `.nvmrc` e `.node-version`. Depois habilite o Corepack e confirme `pnpm --version` como `11.22.0`.
+
 ## Configuração local
 
 ```powershell
