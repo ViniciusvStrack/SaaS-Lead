@@ -1,16 +1,18 @@
-# Worker — provider de análise de IA
+# Worker — providers de IA (análise e sugestão)
 
-O worker escolhe o provider de análise no startup, em
-`apps/worker/src/ai-provider.config.ts`.
+O worker escolhe os providers de análise e de sugestão no startup, em
+`apps/worker/src/ai-provider.config.ts`, com a mesma configuração de ambiente.
 
 ## Comportamento
 
-| Configuração | Provider efetivo |
-|---|---|
-| Nada definido | `RuleBasedAnalysisProvider` (determinístico, sem custo) |
-| `OPENAI_API_KEY` definido | `OpenAIProvider` (Responses API, Structured Outputs) |
-| `AI_PROVIDER=rules` | Regras, mesmo com chave presente |
-| `AI_PROVIDER=openai` | OpenAI; falha no startup se faltar chave ou modelo |
+| Configuração | Análise | Sugestão |
+|---|---|---|
+| Nada definido | `RuleBasedAnalysisProvider` | `RuleBasedSuggestionProvider` |
+| `OPENAI_API_KEY` definido | `OpenAIProvider` (Structured Outputs) | `OpenAISuggestionProvider` |
+| `AI_PROVIDER=rules` | Regras, mesmo com chave presente | Regras, mesmo com chave presente |
+| `AI_PROVIDER=openai` | OpenAI; falha no startup se faltar chave ou modelo | idem |
+
+Ambos usam o mesmo `OPENAI_MODEL`, `OPENAI_TIMEOUT_MS` e `OPENAI_BASE_URL`.
 
 Configuração inválida **falha no startup**. O worker não degrada silenciosamente
 para regras: um job com provider indisponível falha e é reprocessado pela fila,
@@ -27,11 +29,22 @@ sem gerar oportunidade nem envio.
 | `AI_PROMPT_VERSION` | não | `conversation-analysis.v1` | entra no hash de cache |
 | `OPENAI_BASE_URL` | não | `https://api.openai.com/v1` | útil para proxy/ambiente de teste |
 
+## Fluxo de sugestão
+
+Depois que `opportunity.detect` grava uma oportunidade, o worker monta a sugestão
+de próxima ação com `PrismaSuggestionRuntime` e persiste em `AISuggestion`
+(status `DRAFT`). A operação é idempotente por oportunidade + análise: um job
+reentregue reutiliza a sugestão existente e não chama o provider de novo.
+
+O texto sugerido nunca é enviado automaticamente — ele é só um rascunho para
+revisão/aprovação humana (Policy Engine + outbound).
+
 ## Cache e custo
 
-`AIAnalysis` e `UsageRecord` usam `inputHash` + `promptVersion` + `model` + provider.
-Trocar modelo, provider ou versão de prompt invalida o cache e cria novos registros
-de uso — o custo fica atribuído por organização.
+`AIAnalysis`, `AISuggestion` e `UsageRecord` usam `inputHash` + `promptVersion` +
+`model` + provider. Trocar modelo, provider ou versão de prompt invalida o cache
+e cria novos registros de uso — o custo fica atribuído por organização
+(`sourceType = "AISuggestion"`).
 
 ## Validação
 
