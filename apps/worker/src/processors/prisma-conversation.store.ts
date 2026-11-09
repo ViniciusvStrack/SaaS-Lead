@@ -2,10 +2,28 @@ import type { DatabaseClient } from "@saas-lead/database";
 import type { ConversationSnapshot, InboundMessageEvent, OrganizationId } from "@saas-lead/contracts";
 import type { ConversationStore, StoredInboundWebhook } from "./normalize-inbound.processor.js";
 
+type MetaMessage = {
+  id?: string;
+  from?: string;
+  timestamp?: string;
+  type?: string;
+  text?: { body?: string };
+  image?: { caption?: string };
+  video?: { caption?: string };
+  document?: { caption?: string; filename?: string };
+  audio?: { voice?: boolean };
+  sticker?: { emoji?: string };
+  location?: { name?: string; address?: string };
+  contacts?: Array<{ name?: { formatted_name?: string } }>;
+  button?: { text?: string };
+  interactive?: { button_reply?: { title?: string }; list_reply?: { title?: string } };
+  reaction?: { emoji?: string };
+};
+
 type MetaPayload = {
   entry?: Array<{ changes?: Array<{ value?: {
     contacts?: Array<{ wa_id?: string; profile?: { name?: string } }>;
-    messages?: Array<{ id?: string; from?: string; timestamp?: string; type?: string; text?: { body?: string } }>;
+    messages?: MetaMessage[];
   } }> }>;
 };
 
@@ -50,15 +68,53 @@ export class PrismaConversationStore implements ConversationStore {
   }
 }
 
-function parseInboundPayload(payload: unknown) {
+export function parseInboundPayload(payload: unknown) {
   const value = (payload as MetaPayload)?.entry?.[0]?.changes?.[0]?.value;
   const message = value?.messages?.[0];
   const contact = value?.contacts?.[0];
   const senderId = message?.from ?? contact?.wa_id;
-  const body = message?.type === "text" ? message.text?.body : undefined;
+  const body = message ? bodyFromMessage(message) : undefined;
   const timestamp = Number(message?.timestamp);
   if (!message?.id || !senderId || !body || !Number.isFinite(timestamp)) return undefined;
   return { messageId: message.id, senderId, senderName: contact?.profile?.name, body, occurredAt: new Date(timestamp * 1000) };
+}
+
+/**
+ * WhatsApp delivers text, media, buttons, reactions and more. The analysis
+ * pipeline only needs a readable body, so non-text messages become a short
+ * placeholder (plus caption/filename when available) instead of failing.
+ */
+function bodyFromMessage(message: MetaMessage): string | undefined {
+  const label = (name: string, detail?: string) => {
+    const trimmed = detail?.trim();
+    return trimmed ? `[${name}] ${trimmed}` : `[${name}]`;
+  };
+  switch (message.type) {
+    case "text":
+      return message.text?.body;
+    case "image":
+      return label("imagem", message.image?.caption);
+    case "video":
+      return label("vídeo", message.video?.caption);
+    case "document":
+      return label("documento", message.document?.caption ?? message.document?.filename);
+    case "audio":
+      return "[áudio]";
+    case "sticker":
+      return "[figurinha]";
+    case "location":
+      return label("localização", message.location?.name ?? message.location?.address);
+    case "contacts":
+      return label("contato", message.contacts?.[0]?.name?.formatted_name);
+    case "button":
+      return label("botão", message.button?.text);
+    case "interactive":
+      return label("resposta", message.interactive?.button_reply?.title ?? message.interactive?.list_reply?.title);
+    case "reaction":
+      return label("reação", message.reaction?.emoji);
+    default:
+      return label(message.type ?? "mensagem");
+  }
 }
 
 function toSnapshot(conversation: { id: string; organizationId: string; contactId: string; lastMessageBody: string | null; lastMessageAt: Date | null }): ConversationSnapshot {
