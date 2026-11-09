@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { BillingProvider } from "@saas-lead/contracts";
 
-type MercadoPagoSubscription = { id?: string; payer_email?: string; init_point?: string; sandbox_init_point?: string };
+type MercadoPagoSubscription = { id?: string; payer_email?: string; init_point?: string; sandbox_init_point?: string; external_reference?: string; status?: string };
 
 export interface MercadoPagoProviderOptions {
   accessToken: string;
@@ -33,6 +33,13 @@ export class MercadoPagoProvider implements BillingProvider {
     const payload = (await response.json()) as MercadoPagoSubscription;
     if (!payload.id) throw new Error("Mercado Pago response did not include a subscription id");
     return { externalCustomerId: payload.payer_email ?? input.payerEmail, externalSubscriptionId: payload.id, idempotencyKey: input.idempotencyKey, ...(payload.init_point || payload.sandbox_init_point ? { checkoutUrl: payload.init_point ?? payload.sandbox_init_point } : {}) };
+  }
+
+  async getSubscription(externalSubscriptionId: string): Promise<{ organizationId?: string; status?: string }> {
+    const response = await this.fetcher(`${this.options.apiUrl.replace(/\/$/, "")}/preapproval/${encodeURIComponent(externalSubscriptionId)}`, { headers: { Authorization: `Bearer ${this.options.accessToken}` } });
+    if (!response.ok) throw new Error(`Mercado Pago subscription lookup failed (${response.status})`);
+    const payload = (await response.json()) as MercadoPagoSubscription;
+    return { ...(payload.external_reference ? { organizationId: payload.external_reference } : {}), ...(payload.status ? { status: payload.status } : {}) };
   }
 }
 

@@ -6,10 +6,11 @@ import { OrganizationsModule } from "./modules/organizations/organizations.modul
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { OpportunitiesModule } from "./modules/opportunities/opportunities.module.js";
 import { WebhooksModule } from "./modules/webhooks/webhooks.module.js";
+import { SubscriptionsModule } from "./modules/subscriptions/subscriptions.module.js";
 import { DATABASE_PROBE, ReadinessService, REDIS_PROBE } from "./readiness.service.js";
 
 @Module({
-  imports: [AuthModule, OrganizationsModule, OpportunitiesModule, WebhooksModule],
+  imports: [AuthModule, OrganizationsModule, OpportunitiesModule, WebhooksModule, SubscriptionsModule],
   controllers: [HealthController],
   providers: [
     ReadinessService,
