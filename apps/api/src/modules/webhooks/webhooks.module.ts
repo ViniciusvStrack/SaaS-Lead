@@ -4,6 +4,7 @@ import { WebhooksController } from "./webhooks.controller.js";
 import { PrismaWebhookStore } from "./prisma-webhook.store.js";
 import { WebhookInbox } from "./webhook-inbox.js";
 import { BullMqNormalizeQueue, type NormalizeQueuePublisher } from "./webhook-normalize.publisher.js";
+import { BullMqReconcileQueue, type ReconcileQueuePublisher } from "../outbound/outbound-reconcile.publisher.js";
 
 @Module({
   controllers: [WebhooksController],
@@ -16,15 +17,21 @@ import { BullMqNormalizeQueue, type NormalizeQueuePublisher } from "./webhook-no
       provide: "WEBHOOK_NORMALIZE_PUBLISHER",
       useFactory: (): NormalizeQueuePublisher => new BullMqNormalizeQueue(process.env.REDIS_URL ?? ""),
     },
+    {
+      provide: "RECONCILE_QUEUE_PUBLISHER",
+      useFactory: (): ReconcileQueuePublisher => new BullMqReconcileQueue(process.env.REDIS_URL ?? ""),
+    },
   ],
 })
 export class WebhooksModule implements OnModuleDestroy {
   constructor(
     @Inject("WEBHOOKS_DATABASE") private readonly database: DatabaseClient,
     @Inject("WEBHOOK_NORMALIZE_PUBLISHER") private readonly normalizeQueue: NormalizeQueuePublisher,
+    @Inject("RECONCILE_QUEUE_PUBLISHER") private readonly reconcileQueue: ReconcileQueuePublisher,
   ) {}
   async onModuleDestroy(): Promise<void> {
     await this.normalizeQueue.close();
+    await this.reconcileQueue.close();
     await this.database.$disconnect();
   }
 }

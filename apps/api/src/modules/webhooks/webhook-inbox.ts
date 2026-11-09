@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
-export interface InboxEvent { externalId: string; organizationId: string; phoneNumberId: string; payload: unknown }
+export interface InboxEvent { externalId: string; organizationId: string; phoneNumberId: string; externalMessageId?: string; payload: unknown }
 export interface InboxInsertResult { status: "inserted" | "duplicate"; eventId: string }
 export interface InboxStore { insert(event: InboxEvent): Promise<InboxInsertResult> }
 export interface NumberDirectory { findOrganizationId(phoneNumberId: string): Promise<string | undefined> }
@@ -39,16 +39,22 @@ export class WebhookInbox {
   }
 }
 
-function extractIdentity(payload: unknown): { externalId: string; phoneNumberId: string } | undefined {
+export function extractIdentity(payload: unknown): { externalId: string; phoneNumberId: string; externalMessageId?: string } | undefined {
   if (!payload || typeof payload !== "object") return undefined;
-  const root = payload as { entry?: Array<{ changes?: Array<{ value?: { metadata?: { phone_number_id?: string }; messages?: Array<{ id?: string }> } }> }> };
+  const root = payload as { entry?: Array<{ changes?: Array<{ value?: { metadata?: { phone_number_id?: string }; messages?: Array<{ id?: string }>; statuses?: Array<{ id?: string; message_id?: string }> } }> }> };
   const value = root.entry?.[0]?.changes?.[0]?.value;
   const phoneNumberId = value?.metadata?.phone_number_id;
-  // Only real inbound messages are processable. Delivery-status payloads have
-  // no `messages` array; using the entry id here would store a non-unique row
-  // that the worker cannot normalize.
-  const externalId = value?.messages?.[0]?.id;
-  return phoneNumberId && externalId ? { phoneNumberId, externalId } : undefined;
+  // Inbound messages take precedence. Delivery-status payloads carry the
+  // original outbound message id in `statuses[0].message_id` and are used for
+  // outbound reconciliation.
+  const messageId = value?.messages?.[0]?.id;
+  if (phoneNumberId && messageId) return { phoneNumberId, externalId: messageId };
+  const statusId = value?.statuses?.[0]?.id;
+  if (!phoneNumberId || !statusId) return undefined;
+  const externalMessageId = value?.statuses?.[0]?.message_id;
+  return externalMessageId
+    ? { phoneNumberId, externalId: statusId, externalMessageId }
+    : { phoneNumberId, externalId: statusId };
 }
 
 export class InMemoryInboxStore implements InboxStore {
