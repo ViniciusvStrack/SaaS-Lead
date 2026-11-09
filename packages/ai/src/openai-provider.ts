@@ -1,11 +1,18 @@
 import type { AIProvider, AnalysisResult, AnalyzeConversationInput } from "./ai-provider.js";
 import { conversationAnalysisJsonSchema, conversationAnalysisSchema } from "./schemas/conversation-analysis.js";
 
+export interface OpenAIJsonSchemaFormat {
+  type: "json_schema";
+  name: string;
+  strict: true;
+  schema: Record<string, unknown>;
+}
+
 export interface OpenAIRequest {
   model: string;
   store: false;
   input: string;
-  text: { format: { type: "json_schema"; name: "conversation_analysis"; strict: true; schema: typeof conversationAnalysisJsonSchema } };
+  text: { format: OpenAIJsonSchemaFormat };
 }
 
 export type OpenAITransportResponse =
