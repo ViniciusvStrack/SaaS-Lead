@@ -1,12 +1,15 @@
 import { loadConfig } from "@saas-lead/config";
 import { createDatabaseClient } from "@saas-lead/database";
 import { createLogger, withCorrelation } from "@saas-lead/observability";
+import { PolicyEngine } from "@saas-lead/policy";
 
 import { createAnalysisProvider, createSuggestionProvider, loadAiProviderSettings } from "./ai-provider.config.js";
 import { createBullMqWorkerFactory } from "./bullmq-worker.factory.js";
 import { NormalizeInboundProcessor } from "./processors/normalize-inbound.processor.js";
 import { PrismaAnalysisRuntime } from "./processors/prisma-analysis.runtime.js";
 import { PrismaOpportunityRuntime } from "./processors/prisma-opportunity.runtime.js";
+import { PrismaSendRuntime } from "./processors/prisma-send.runtime.js";
+import { MetaSendProvider } from "./processors/meta-send.provider.js";
 import { PrismaSuggestionRuntime } from "./processors/prisma-suggestion.runtime.js";
 import { PrismaConversationStore } from "./processors/prisma-conversation.store.js";
 import { BullMqAnalysisQueue, conversationAnalyzeQueue } from "./queues/conversation-analysis.queue.js";
@@ -28,9 +31,15 @@ const analysisQueue = new BullMqAnalysisQueue(workerEnv.redisUrl);
 const opportunityQueue = new BullMqOpportunityQueue(workerEnv.redisUrl);
 const detect = new PrismaOpportunityRuntime(database);
 const suggest = new PrismaSuggestionRuntime(database, suggestion.provider, { model: suggestion.model, promptVersion: suggestion.promptVersion, providerName: suggestion.providerName });
-const runtime = new WorkerRuntime(createBullMqWorkerFactory(workerEnv.redisUrl), createWorkerHandlers(normalize, analyze, analysisQueue, opportunityQueue, detect, suggest), (error) => logger.info("worker queue error", error));
+const policy = new PolicyEngine();
+const send = new PrismaSendRuntime(
+  database,
+  new MetaSendProvider(database, config.metaGraphApiVersion, process.env.META_ACCESS_TOKEN ?? ""),
+  policy,
+);
+const runtime = new WorkerRuntime(createBullMqWorkerFactory(workerEnv.redisUrl), createWorkerHandlers(normalize, analyze, analysisQueue, opportunityQueue, detect, suggest, send), (error) => logger.info("worker queue error", error));
 runtime.start();
-logger.info("worker ready", { nodeEnv: config.nodeEnv, queues: ["webhook.normalize", conversationAnalyzeQueue, opportunityDetectQueue] });
+logger.info("worker ready", { nodeEnv: config.nodeEnv, queues: ["webhook.normalize", conversationAnalyzeQueue, opportunityDetectQueue, "message.send"] });
 
 let closing = false;
 const shutdown = async (signal: string) => {

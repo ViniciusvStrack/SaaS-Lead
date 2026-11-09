@@ -15,6 +15,7 @@
     "@saas-lead/database": "workspace:*",
     "@saas-lead/observability": "workspace:*",
     "@saas-lead/policy": "workspace:*",
+    "@saas-lead/whatsapp": "workspace:*",
     "bullmq": "6.3.11",
     "zod": "4.6.5"
   }

@@ -64,6 +64,7 @@ describe("createWorkerHandlers", () => {
       { schedule: async (job, dueAt) => { scheduled.push({ job, dueAt }); } },
       { process: async () => [] },
       { process: async () => undefined },
+      { process: async () => ({ status: "SENT" }) },
     );
 
     await expect(handlers["webhook.normalize"]!({ webhookEventId: "webhook-1", organizationId: "org-a" })).resolves.toEqual(snapshot);
@@ -94,6 +95,7 @@ describe("createWorkerHandlers", () => {
       { schedule: async () => undefined },
       { process: async () => [candidate] },
       { process: async (job) => { suggested.push(job); return { id: "suggestion-1", content: "Responder agora", cached: false }; } },
+      { process: async () => ({ status: "SENT" }) },
     );
 
     await expect(
