@@ -9,15 +9,16 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@nestjs/common": "12.1.2",
+    "@nestjs/core": "12.1.2",
+    "@nestjs/platform-express": "12.1.2",
     "@saas-lead/ai": "workspace:*",
     "@saas-lead/config": "workspace:*",
     "@saas-lead/contracts": "workspace:*",
     "@saas-lead/database": "workspace:*",
     "@saas-lead/observability": "workspace:*",
     "@saas-lead/policy": "workspace:*",
-    "@nestjs/common": "12.1.2",
-    "@nestjs/core": "12.1.2",
-    "@nestjs/platform-express": "12.1.2",
+    "bullmq": "6.3.11",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2"
   },
