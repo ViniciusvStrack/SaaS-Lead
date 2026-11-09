@@ -1,8 +1,8 @@
 import { loadConfig } from "@saas-lead/config";
-import { RuleBasedAnalysisProvider } from "@saas-lead/ai";
 import { createDatabaseClient } from "@saas-lead/database";
 import { createLogger, withCorrelation } from "@saas-lead/observability";
 
+import { createAnalysisProvider, loadAiProviderSettings } from "./ai-provider.config.js";
 import { createBullMqWorkerFactory } from "./bullmq-worker.factory.js";
 import { NormalizeInboundProcessor } from "./processors/normalize-inbound.processor.js";
 import { PrismaAnalysisRuntime } from "./processors/prisma-analysis.runtime.js";
@@ -18,8 +18,9 @@ const workerEnv = validateWorkerEnv(process.env);
 const config = loadConfig(process.env);
 const logger = createLogger(withCorrelation({}));
 const database = createDatabaseClient(workerEnv.databaseUrl);
+const ai = createAnalysisProvider(loadAiProviderSettings(process.env));
 const normalize = new NormalizeInboundProcessor(new PrismaConversationStore(database));
-const analyze = new PrismaAnalysisRuntime(database, new RuleBasedAnalysisProvider(), { model: "local-rules.v1", promptVersion: "local-rules.v1", providerName: "local" });
+const analyze = new PrismaAnalysisRuntime(database, ai.provider, { model: ai.model, promptVersion: ai.promptVersion, providerName: ai.providerName });
 const analysisQueue = new BullMqAnalysisQueue(workerEnv.redisUrl);
 const opportunityQueue = new BullMqOpportunityQueue(workerEnv.redisUrl);
 const detect = new PrismaOpportunityRuntime(database);
