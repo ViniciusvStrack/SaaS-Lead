@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { InMemoryInboxStore, InMemoryNumberDirectory, WebhookInbox } from "../src/modules/webhooks/webhook-inbox.js";
 import { verifyMetaChallenge } from "../src/modules/webhooks/meta-verification.js";
 import type { NormalizeQueuePublisher, NormalizeWebhookJob } from "../src/modules/webhooks/webhook-normalize.publisher.js";
+import type { DatabaseClient } from "@saas-lead/database";
+import type { ReconcileQueuePublisher } from "../src/modules/webhooks/../outbound/outbound-reconcile.publisher.js";
 import { WebhooksController } from "../src/modules/webhooks/webhooks.controller.js";
 
 const secret = "secret";
@@ -16,7 +18,17 @@ function createController() {
     close: async () => undefined,
   };
   const inbox = new WebhookInbox(secret, new InMemoryNumberDirectory({ "phone-1": "org-a" }), new InMemoryInboxStore());
-  const controller = new WebhooksController(inbox, "verify", publisher);
+  const reconcilePublisher: ReconcileQueuePublisher = {
+    publish: async () => undefined,
+    close: async () => undefined,
+  };
+  const controller = new WebhooksController(
+    inbox,
+    "verify",
+    publisher,
+    reconcilePublisher,
+    { outboundMessage: { findFirst: async () => undefined } } as unknown as DatabaseClient,
+  );
   return { controller, published };
 }
 
@@ -52,8 +64,25 @@ describe("Meta webhook inbox", () => {
     await expect(inbox.accept(payload, sign(payload))).resolves.toEqual({ accepted: false, reason: "unknown_phone_number" });
   });
 
-  it("ignores delivery-status payloads that carry no inbound message", async () => {
-    const statusPayload = Buffer.from(JSON.stringify({ entry: [{ id: "entry-1", changes: [{ value: { metadata: { phone_number_id: "phone-1" }, statuses: [{ id: "wamid-out", status: "delivered" }] } }] }] }));
+  it("aceita delivery-status payloads e extrai externalMessageId", async () => {
+    const statusPayload = Buffer.from(JSON.stringify({ entry: [{ id: "entry-1", changes: [{ value: { metadata: { phone_number_id: "phone-1" }, statuses: [{ id: "wamid-out", message_id: "wamid-msg", status: "delivered" }] } }] }] }));
+    const store = new InMemoryInboxStore();
+    const inbox = new WebhookInbox(secret, new InMemoryNumberDirectory({ "phone-1": "org-a" }), store);
+
+    const result = await inbox.accept(statusPayload, sign(statusPayload));
+
+    expect(result).toMatchObject({ accepted: true, organizationId: "org-a" });
+    if (result.accepted) {
+      const event = store.events.get("wamid-out");
+      expect(event).toBeDefined();
+      expect(event?.externalId).toBe("wamid-out");
+      expect(event?.externalMessageId).toBe("wamid-msg");
+    }
+    expect(store.events.size).toBe(1);
+  });
+
+  it("rejeita delivery-status payloads sem phone_number_id", async () => {
+    const statusPayload = Buffer.from(JSON.stringify({ entry: [{ id: "entry-1", changes: [{ value: { statuses: [{ id: "wamid-out", status: "delivered" }] } }] }] }));
     const store = new InMemoryInboxStore();
     const inbox = new WebhookInbox(secret, new InMemoryNumberDirectory({ "phone-1": "org-a" }), store);
 
