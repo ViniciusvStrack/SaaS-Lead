@@ -1,3 +1,28 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import "./billing.css";
-export default function BillingPage(){return <main className="billing-page"><nav><Link href="/settings">← Configurações</Link><span>Configuração demonstrativa</span></nav><header><p className="eyebrow">BILLING</p><h1>Plano e uso</h1><p>Acompanhe limites operacionais sem misturar mensalidade com custos variáveis dos provedores.</p></header><section className="billing-grid"><article className="plan-card"><div><span>PLANO ATUAL</span><h2>Growth</h2><p>Trial de configuração — nenhuma cobrança ativa.</p></div><b>Validação comercial pendente</b></article><article className="usage-card"><div className="usage-title"><span><b>Mensagens enviadas</b><small>Ciclo atual</small></span><strong>34 / 100</strong></div><div className="usage-track"><i/></div><p>66 mensagens disponíveis neste ciclo.</p></article><article className="usage-card"><div className="usage-title"><span><b>Análises com IA</b><small>Ciclo atual</small></span><strong>18 / 100</strong></div><div className="usage-track ai"><i/></div><p>Uso medido por organização e origem.</p></article></section><aside className="billing-note"><b>Transparência de custos</b><p>Os custos da Meta são medidos separadamente. Preços, moeda e impostos serão carregados da configuração comercial aprovada, nunca do código.</p></aside></main>}
+import { loadCurrentSubscription, type BillingResult } from "../../../lib/billing";
+
+export const dynamic = "force-dynamic";
+
+export default async function BillingPage() {
+  const token = (await cookies()).get("saas_lead_session")?.value;
+  const result = await loadCurrentSubscription(token, process.env.API_BASE_URL);
+  return <BillingView result={result} />;
+}
+
+export function BillingView({ result }: { result: BillingResult }) {
+  const subscription = result.status === "ready" ? result.subscription : null;
+  return <main className="billing-page">
+    <nav><Link href="/settings">← Configurações</Link><span>Mercado Pago</span></nav>
+    <header><p className="eyebrow">BILLING</p><h1>Plano e uso</h1><p>Acompanhe sua assinatura e os limites operacionais da empresa.</p></header>
+    {result.status === "unauthenticated" && <p className="demo-notice compact">Faça login para consultar sua assinatura.</p>}
+    {result.status === "unavailable" && <p className="demo-notice compact">Não foi possível carregar a assinatura agora. Tente novamente em instantes.</p>}
+    {result.status === "ready" && <section className="billing-grid">
+      <article className="plan-card"><div><span>PLANO ATUAL</span><h2>{subscription?.planName ?? "Sem assinatura"}</h2><p>{subscription ? "Assinatura gerenciada pelo Mercado Pago." : "Escolha um plano para ativar sua operação."}</p></div><b>{subscription?.status ?? "INACTIVE"}</b></article>
+      <article className="usage-card"><b>Assinatura</b><p>{subscription ? `Código do plano: ${subscription.planCode}` : "Nenhuma assinatura ativa encontrada."}</p></article>
+      <article className="usage-card"><b>Próximo passo</b><p>{subscription?.status === "ACTIVE" ? "Sua assinatura está ativa." : "Conecte um plano pelo checkout do Mercado Pago."}</p></article>
+    </section>}
+    <aside className="billing-note"><b>Transparência de custos</b><p>Valores, limites e status são controlados pelo sistema e confirmados pelo Mercado Pago via webhook.</p></aside>
+  </main>;
+}

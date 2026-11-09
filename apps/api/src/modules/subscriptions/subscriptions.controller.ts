@@ -1,4 +1,6 @@
 import { Body, Controller, Get, Headers, HttpCode, Inject, Post, Query, UnauthorizedException } from "@nestjs/common";
+import type { DatabaseClient } from "@saas-lead/database";
+import { SessionService } from "../auth/session.service.js";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { MercadoPagoProvider } from "./mercadopago.provider.js";
 import { idempotencyKeyForSubscription } from "./mercadopago.provider.js";
@@ -10,25 +12,36 @@ export class SubscriptionsController {
     @Inject("MERCADOPAGO_PROVIDER") private readonly provider: MercadoPagoProvider,
     @Inject("SUBSCRIPTION_STORE") private readonly store: PrismaSubscriptionStore,
     @Inject("MERCADOPAGO_WEBHOOK_SECRET") private readonly webhookSecret: string,
+    @Inject(SessionService) private readonly sessions: SessionService,
+    @Inject("SUBSCRIPTIONS_DATABASE") private readonly database: DatabaseClient,
   ) {}
 
   @Get("current")
-  async current(@Headers("x-organization-id") organizationId: string | undefined) {
-    if (!organizationId) throw new UnauthorizedException("Organization is required");
+  async current(@Headers("cookie") cookie?: string) {
+    const organizationId = await this.organizationId(cookie);
     const subscription = await this.store.findByOrganization(organizationId);
     if (!subscription) return { subscription: null };
     return { subscription: { id: subscription.id, planCode: subscription.plan.code, planName: subscription.plan.name, status: subscription.status, trialEndsAt: subscription.trialEndsAt, currentPeriodEndsAt: subscription.currentPeriodEndsAt, createdAt: subscription.createdAt } };
   }
 
   @Post()
-  async create(@Headers("x-organization-id") organizationId: string | undefined, @Body() body: { planCode?: string; payerEmail?: string; idempotencyKey?: string }) {
-    if (!organizationId || !body.planCode || !body.payerEmail) throw new UnauthorizedException("Organization, planCode and payerEmail are required");
+  async create(@Headers("cookie") cookie: string | undefined, @Body() body: { planCode?: string; payerEmail?: string; idempotencyKey?: string }) {
+    const organizationId = await this.organizationId(cookie);
+    if (!body.planCode || !body.payerEmail) throw new UnauthorizedException("planCode and payerEmail are required");
     const idempotencyKey = body.idempotencyKey ?? idempotencyKeyForSubscription(organizationId, body.planCode);
     const existing = await this.store.findByIdempotency(organizationId, idempotencyKey);
     if (existing) return { id: existing.id, status: existing.status, externalSubscriptionId: existing.externalSubscriptionId };
     const external = await this.provider.createSubscription({ organizationId, planCode: body.planCode, payerEmail: body.payerEmail, idempotencyKey });
     const subscription = await this.store.create({ organizationId, planCode: body.planCode, payerEmail: body.payerEmail, idempotencyKey, externalSubscriptionId: external.externalSubscriptionId, ...(external.checkoutUrl ? { checkoutUrl: external.checkoutUrl } : {}) });
     return { id: subscription.id, status: subscription.status, externalSubscriptionId: subscription.externalSubscriptionId, ...(external.checkoutUrl ? { checkoutUrl: external.checkoutUrl } : {}) };
+  }
+
+  private async organizationId(cookie: string | undefined): Promise<string> {
+    const token = cookie?.split(";").map((part) => part.trim()).find((part) => part.startsWith("saas_lead_session="))?.slice("saas_lead_session=".length);
+    const session = await this.sessions.requireSession(token);
+    const membership = await this.database.organizationMember.findUnique({ where: { organizationId_userId: { organizationId: session.organizationId, userId: session.userId } }, include: { organization: true, user: true } });
+    if (!membership || membership.status !== "ACTIVE" || membership.organization.status !== "ACTIVE" || membership.user.status !== "ACTIVE") throw new UnauthorizedException("Authentication required");
+    return membership.organizationId;
   }
 
   @Post("webhook")

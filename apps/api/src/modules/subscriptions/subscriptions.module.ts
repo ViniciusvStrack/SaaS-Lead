@@ -1,10 +1,12 @@
 import { Inject, Module, type OnModuleDestroy } from "@nestjs/common";
 import { createDatabaseClient, type DatabaseClient } from "@saas-lead/database";
+import { AuthModule } from "../auth/auth.module.js";
 import { MercadoPagoProvider, parseMercadoPagoPlanIds } from "./mercadopago.provider.js";
 import { PrismaSubscriptionStore } from "./prisma-subscription.store.js";
 import { SubscriptionsController } from "./subscriptions.controller.js";
 
 @Module({
+  imports: [AuthModule],
   controllers: [SubscriptionsController],
   providers: [
     { provide: "SUBSCRIPTIONS_DATABASE", useFactory: () => createDatabaseClient(process.env.DATABASE_URL ?? "") },
