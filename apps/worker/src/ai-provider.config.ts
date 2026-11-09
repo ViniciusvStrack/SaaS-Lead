@@ -1,8 +1,11 @@
 import {
   FetchOpenAIResponseTransport,
+  OpenAISuggestionProvider,
   OpenAIProvider,
   RuleBasedAnalysisProvider,
+  RuleBasedSuggestionProvider,
   type AIProvider,
+  type SuggestionProvider,
 } from "@saas-lead/ai";
 
 export type AiProviderMode = "rules" | "openai";
@@ -18,6 +21,13 @@ export interface AiProviderSettings {
 
 export interface AnalysisRuntimeConfig {
   provider: AIProvider;
+  providerName: string;
+  model: string;
+  promptVersion: string;
+}
+
+export interface SuggestionRuntimeConfig {
+  provider: SuggestionProvider;
   providerName: string;
   model: string;
   promptVersion: string;
@@ -92,6 +102,33 @@ export function createAnalysisProvider(settings: AiProviderSettings): AnalysisRu
 
   return {
     provider: new OpenAIProvider({ model: settings.model, timeoutMs: settings.timeoutMs, transport }),
+    providerName: "openai",
+    model: settings.model,
+    promptVersion: settings.promptVersion,
+  };
+}
+
+export function createSuggestionProvider(settings: AiProviderSettings): SuggestionRuntimeConfig {
+  if (settings.mode === "rules") {
+    return {
+      provider: new RuleBasedSuggestionProvider(),
+      providerName: "local-rules",
+      model: settings.model,
+      promptVersion: settings.promptVersion,
+    };
+  }
+
+  if (!settings.apiKey) {
+    throw new Error("OPENAI_API_KEY is required when AI_PROVIDER=openai");
+  }
+
+  const transport = new FetchOpenAIResponseTransport({
+    apiKey: settings.apiKey,
+    ...(settings.baseUrl ? { baseUrl: settings.baseUrl } : {}),
+  });
+
+  return {
+    provider: new OpenAISuggestionProvider({ model: settings.model, timeoutMs: settings.timeoutMs, transport }),
     providerName: "openai",
     model: settings.model,
     promptVersion: settings.promptVersion,
