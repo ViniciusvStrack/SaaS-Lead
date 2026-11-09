@@ -41,10 +41,13 @@ export class WebhookInbox {
 
 function extractIdentity(payload: unknown): { externalId: string; phoneNumberId: string } | undefined {
   if (!payload || typeof payload !== "object") return undefined;
-  const root = payload as { entry?: Array<{ id?: string; changes?: Array<{ value?: { metadata?: { phone_number_id?: string }; messages?: Array<{ id?: string }> } }> }> };
+  const root = payload as { entry?: Array<{ changes?: Array<{ value?: { metadata?: { phone_number_id?: string }; messages?: Array<{ id?: string }> } }> }> };
   const value = root.entry?.[0]?.changes?.[0]?.value;
   const phoneNumberId = value?.metadata?.phone_number_id;
-  const externalId = value?.messages?.[0]?.id ?? root.entry?.[0]?.id;
+  // Only real inbound messages are processable. Delivery-status payloads have
+  // no `messages` array; using the entry id here would store a non-unique row
+  // that the worker cannot normalize.
+  const externalId = value?.messages?.[0]?.id;
   return phoneNumberId && externalId ? { phoneNumberId, externalId } : undefined;
 }
 
