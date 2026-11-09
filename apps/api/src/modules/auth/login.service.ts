@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
 import type { DatabaseClient } from "@saas-lead/database";
-import { SessionService } from "./session.service.js";
+import type { SessionService } from "./session.service.js";
 
 const LOGIN_TOKEN_TTL_MS = 15 * 60 * 1000;
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
