@@ -14,14 +14,19 @@ describe("WorkerRuntime", () => {
     const runtime = new WorkerRuntime(factory, {
       "webhook.normalize": async (data) => ({ accepted: (data as { webhookEventId: string }).webhookEventId }),
       "message.send": async () => ({ sent: true }),
+      "message.reconcile": async () => ({ reconciled: true }),
     });
 
     runtime.start();
-    expect(registered.map(({ queue }) => queue)).toEqual(["webhook.normalize", "message.send"]);
+    expect(registered.map(({ queue }) => queue)).toEqual([
+      "webhook.normalize",
+      "message.send",
+      "message.reconcile",
+    ]);
     await expect(registered[0]!.process({ webhookEventId: "webhook-1" })).resolves.toEqual({ accepted: "webhook-1" });
     await runtime.close();
     await runtime.close();
-    expect(closed).toEqual(["webhook.normalize", "message.send"]);
+    expect(closed).toEqual(["webhook.normalize", "message.send", "message.reconcile"]);
   });
 
   it("logs queue failures without job payloads or credentials", () => {
@@ -65,6 +70,7 @@ describe("createWorkerHandlers", () => {
       { process: async () => [] },
       { process: async () => undefined },
       { process: async () => ({ status: "SENT" }) },
+      { process: async () => ({ status: "DELIVERED" }) },
     );
 
     await expect(handlers["webhook.normalize"]!({ webhookEventId: "webhook-1", organizationId: "org-a" })).resolves.toEqual(snapshot);
@@ -96,6 +102,7 @@ describe("createWorkerHandlers", () => {
       { process: async () => [candidate] },
       { process: async (job) => { suggested.push(job); return { id: "suggestion-1", content: "Responder agora", cached: false }; } },
       { process: async () => ({ status: "SENT" }) },
+      { process: async () => ({ status: "DELIVERED" }) },
     );
 
     await expect(
@@ -105,5 +112,54 @@ describe("createWorkerHandlers", () => {
       suggestion: { id: "suggestion-1", content: "Responder agora", cached: false },
     });
     expect(suggested).toEqual([{ organizationId: "org-a", conversationId: "conversation-1" }]);
+  });
+
+  it("handler message.reconcile chama reconcile.process com dados válidos e retorna o resultado", async () => {
+    const processed: unknown[] = [];
+    const handlers = createWorkerHandlers(
+      { process: async () => { throw new Error("not used"); } },
+      { process: async () => { throw new Error("not used"); } },
+      { add: async () => undefined },
+      { schedule: async () => undefined },
+      { process: async () => [] },
+      { process: async () => undefined },
+      { process: async () => ({ status: "SENT" }) },
+      { process: async (job) => { processed.push(job); return { status: "DELIVERED" }; } },
+    );
+
+    await expect(
+      handlers["message.reconcile"]!({
+        organizationId: "org-a",
+        externalMessageId: "ext-msg-1",
+        externalEventId: "ext-event-1",
+        status: "DELIVERED",
+      }),
+    ).resolves.toEqual({ status: "DELIVERED" });
+
+    expect(processed).toEqual([
+      {
+        organizationId: "org-a",
+        externalMessageId: "ext-msg-1",
+        externalEventId: "ext-event-1",
+        status: "DELIVERED",
+      },
+    ]);
+  });
+
+  it("handler message.reconcile rejeita dados malformados (zod schema)", async () => {
+    const handlers = createWorkerHandlers(
+      { process: async () => { throw new Error("not used"); } },
+      { process: async () => { throw new Error("not used"); } },
+      { add: async () => undefined },
+      { schedule: async () => undefined },
+      { process: async () => [] },
+      { process: async () => undefined },
+      { process: async () => ({ status: "SENT" }) },
+      { process: async () => ({ status: "DELIVERED" }) },
+    );
+
+    await expect(
+      handlers["message.reconcile"]!({ organizationId: "org-a" }),
+    ).rejects.toThrow();
   });
 });

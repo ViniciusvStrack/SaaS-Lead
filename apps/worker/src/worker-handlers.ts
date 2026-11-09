@@ -3,9 +3,10 @@ import type { NormalizeInboundProcessor } from "./processors/normalize-inbound.p
 import type { PrismaAnalysisRuntime } from "./processors/prisma-analysis.runtime.js";
 import type { PrismaOpportunityRuntime } from "./processors/prisma-opportunity.runtime.js";
 import type { PrismaSuggestionRuntime } from "./processors/prisma-suggestion.runtime.js";
+import type { PrismaReconcileRuntime } from "./processors/prisma-reconcile.runtime.js";
 import type { PrismaSendRuntime } from "./processors/prisma-send.runtime.js";
 import { conversationAnalyzeQueue, type AnalysisQueuePublisher } from "./queues/conversation-analysis.queue.js";
-import { messageSendQueue } from "./queues/outbound.queues.js";
+import { messageReconcileQueue, messageSendQueue } from "./queues/outbound.queues.js";
 import { opportunityDetectQueue, type OpportunityQueuePublisher } from "./queues/opportunity-detect.queue.js";
 import { webhookNormalizeQueue } from "./queues/webhook-normalize.queue.js";
 import type { QueueHandler } from "./worker-runtime.js";
@@ -13,8 +14,14 @@ import type { QueueHandler } from "./worker-runtime.js";
 const normalizeJobSchema = z.object({ webhookEventId: z.string().min(1), organizationId: z.string().min(1) }).strict();
 const analysisJobSchema = z.object({ conversationId: z.string().min(1), organizationId: z.string().min(1), sourceWebhookEventId: z.string().min(1) }).strict();
 const sendJobSchema = z.object({ outboundMessageId: z.string().min(1), organizationId: z.string().min(1) }).strict();
+const reconcileJobSchema = z.object({
+  organizationId: z.string().min(1),
+  externalMessageId: z.string().min(1),
+  externalEventId: z.string().min(1),
+  status: z.enum(["APPROVED", "BLOCKED", "SENT", "DELIVERED", "READ", "FAILED"]),
+}).strict();
 
-export function createWorkerHandlers(normalize: Pick<NormalizeInboundProcessor, "process">, analyze: Pick<PrismaAnalysisRuntime, "process">, analysisQueue: AnalysisQueuePublisher, opportunityQueue: OpportunityQueuePublisher, detect: Pick<PrismaOpportunityRuntime, "process">, suggest: Pick<PrismaSuggestionRuntime, "process">, send: Pick<PrismaSendRuntime, "process">): Record<string, QueueHandler> {
+export function createWorkerHandlers(normalize: Pick<NormalizeInboundProcessor, "process">, analyze: Pick<PrismaAnalysisRuntime, "process">, analysisQueue: AnalysisQueuePublisher, opportunityQueue: OpportunityQueuePublisher, detect: Pick<PrismaOpportunityRuntime, "process">, suggest: Pick<PrismaSuggestionRuntime, "process">, send: Pick<PrismaSendRuntime, "process">, reconcile: Pick<PrismaReconcileRuntime, "process">): Record<string, QueueHandler> {
   return {
     [webhookNormalizeQueue]: async (data) => {
       const job = normalizeJobSchema.parse(data);
@@ -40,6 +47,10 @@ export function createWorkerHandlers(normalize: Pick<NormalizeInboundProcessor, 
     [messageSendQueue]: async (data) => {
       const job = sendJobSchema.parse(data);
       return send.process(job);
+    },
+    [messageReconcileQueue]: async (data) => {
+      const job = reconcileJobSchema.parse(data);
+      return reconcile.process(job);
     },
   };
 }
