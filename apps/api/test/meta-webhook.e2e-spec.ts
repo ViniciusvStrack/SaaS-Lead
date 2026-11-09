@@ -51,6 +51,15 @@ describe("Meta webhook inbox", () => {
     const inbox = new WebhookInbox(secret, new InMemoryNumberDirectory({}), new InMemoryInboxStore());
     await expect(inbox.accept(payload, sign(payload))).resolves.toEqual({ accepted: false, reason: "unknown_phone_number" });
   });
+
+  it("ignores delivery-status payloads that carry no inbound message", async () => {
+    const statusPayload = Buffer.from(JSON.stringify({ entry: [{ id: "entry-1", changes: [{ value: { metadata: { phone_number_id: "phone-1" }, statuses: [{ id: "wamid-out", status: "delivered" }] } }] }] }));
+    const store = new InMemoryInboxStore();
+    const inbox = new WebhookInbox(secret, new InMemoryNumberDirectory({ "phone-1": "org-a" }), store);
+
+    await expect(inbox.accept(statusPayload, sign(statusPayload))).resolves.toEqual({ accepted: false, reason: "unsupported_payload" });
+    expect(store.events.size).toBe(0);
+  });
 });
 
 describe("WebhooksController", () => {
