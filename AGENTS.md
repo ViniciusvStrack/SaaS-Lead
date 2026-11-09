@@ -28,9 +28,14 @@ Leia este arquivo **e** o quadro de coordenação antes de qualquer alteração.
 ## Git
 
 - **NUNCA** faça merge — nem em `main`, nem entre branches.
-- **NUNCA** faça `git push` para branch compartilhada.
+- **Push é permitido apenas na sua própria branch** (a branch que você criou
+  para a tarefa), para deixá-la visível no GitHub.
+- **NUNCA** faça `git push` na `main` nem em branch compartilhada
+  (`feat/mvp-implementation` ou qualquer branch que não seja sua).
+- Nunca use `push --force` / `--force-with-lease` em branch compartilhada.
 - Commits pequenos, apenas com arquivos da sua tarefa.
-- Ao terminar, deixe a branch pronta para revisão humana e marque `em review`.
+- Ao terminar, deixe a branch pronta para revisão humana, marque `em review`
+  e faça push da sua branch.
 - Revisão e merge são responsabilidade humana.
 
 ## Ao terminar
