@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { RuleBasedAnalysisProvider } from "@saas-lead/ai";
+import { RuleBasedAnalysisProvider, RuleBasedSuggestionProvider } from "@saas-lead/ai";
 
-import { createAnalysisProvider, loadAiProviderSettings } from "../src/ai-provider.config.js";
+import { createAnalysisProvider, createSuggestionProvider, loadAiProviderSettings } from "../src/ai-provider.config.js";
 
 describe("loadAiProviderSettings", () => {
   it("falls back to deterministic rules when no OpenAI key is configured", () => {
@@ -67,5 +67,17 @@ describe("createAnalysisProvider", () => {
     expect(runtime.providerName).toBe("openai");
     expect(runtime.model).toBe("configured-model");
     expect(runtime.promptVersion).toBe("conversation-analysis.v1");
+  });
+
+  it("builds the suggestion provider with the same mode as the analysis provider", () => {
+    const rules = createSuggestionProvider(loadAiProviderSettings({}));
+    expect(rules.provider).toBeInstanceOf(RuleBasedSuggestionProvider);
+    expect(rules.providerName).toBe("local-rules");
+
+    const openai = createSuggestionProvider(
+      loadAiProviderSettings({ OPENAI_API_KEY: "sk-test", OPENAI_MODEL: "configured-model" }),
+    );
+    expect(openai.providerName).toBe("openai");
+    expect(openai.model).toBe("configured-model");
   });
 });

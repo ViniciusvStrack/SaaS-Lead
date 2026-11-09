@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OrganizationId } from "@saas-lead/contracts";
+import type { OpportunityCandidate, OrganizationId } from "@saas-lead/contracts";
 import { WorkerRuntime, type QueueWorkerFactory } from "../src/worker-runtime.js";
 import { createWorkerHandlers } from "../src/worker-handlers.js";
 
@@ -63,6 +63,7 @@ describe("createWorkerHandlers", () => {
       { add: async (job) => { enqueued.push(job); } },
       { schedule: async (job, dueAt) => { scheduled.push({ job, dueAt }); } },
       { process: async () => [] },
+      { process: async () => undefined },
     );
 
     await expect(handlers["webhook.normalize"]!({ webhookEventId: "webhook-1", organizationId: "org-a" })).resolves.toEqual(snapshot);
@@ -72,5 +73,35 @@ describe("createWorkerHandlers", () => {
     expect(enqueued).toEqual([{ conversationId: "conversation-1", organizationId: "org-a", sourceWebhookEventId: "webhook-1" }]);
     expect(analyses).toEqual([{ conversationId: "conversation-1", organizationId: "org-a", sourceWebhookEventId: "webhook-1" }]);
     expect(scheduled).toEqual([{ job: { conversationId: "conversation-1", organizationId: "org-a", sourceWebhookEventId: "webhook-1" }, dueAt: new Date("2026-10-01T16:00:00.000Z") }]);
+  });
+
+  it("generates a suggestion only after an opportunity is detected", async () => {
+    const suggested: unknown[] = [];
+    const candidate: OpportunityCandidate = {
+      deduplicationKey: "dedup-1",
+      organizationId: "org-a",
+      conversationId: "conversation-1",
+      type: "COMPANY_NO_RESPONSE",
+      priority: "URGENT",
+      knownValue: null,
+      evidence: ["sem resposta"],
+      ruleVersion: "opportunity-rules.v1",
+    };
+    const handlers = createWorkerHandlers(
+      { process: async () => { throw new Error("not used"); } },
+      { process: async () => { throw new Error("not used"); } },
+      { add: async () => undefined },
+      { schedule: async () => undefined },
+      { process: async () => [candidate] },
+      { process: async (job) => { suggested.push(job); return { id: "suggestion-1", content: "Responder agora", cached: false }; } },
+    );
+
+    await expect(
+      handlers["opportunity.detect"]!({ conversationId: "conversation-1", organizationId: "org-a", sourceWebhookEventId: "webhook-1" }),
+    ).resolves.toEqual({
+      candidates: [candidate],
+      suggestion: { id: "suggestion-1", content: "Responder agora", cached: false },
+    });
+    expect(suggested).toEqual([{ organizationId: "org-a", conversationId: "conversation-1" }]);
   });
 });
