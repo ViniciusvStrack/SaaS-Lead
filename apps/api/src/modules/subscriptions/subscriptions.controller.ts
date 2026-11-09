@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, HttpCode, Inject, Post, Query, UnauthorizedException } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpCode, Inject, Post, Query, UnauthorizedException } from "@nestjs/common";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { MercadoPagoProvider } from "./mercadopago.provider.js";
 import { idempotencyKeyForSubscription } from "./mercadopago.provider.js";
@@ -11,6 +11,14 @@ export class SubscriptionsController {
     @Inject("SUBSCRIPTION_STORE") private readonly store: PrismaSubscriptionStore,
     @Inject("MERCADOPAGO_WEBHOOK_SECRET") private readonly webhookSecret: string,
   ) {}
+
+  @Get("current")
+  async current(@Headers("x-organization-id") organizationId: string | undefined) {
+    if (!organizationId) throw new UnauthorizedException("Organization is required");
+    const subscription = await this.store.findByOrganization(organizationId);
+    if (!subscription) return { subscription: null };
+    return { subscription: { id: subscription.id, planCode: subscription.plan.code, planName: subscription.plan.name, status: subscription.status, trialEndsAt: subscription.trialEndsAt, currentPeriodEndsAt: subscription.currentPeriodEndsAt, createdAt: subscription.createdAt } };
+  }
 
   @Post()
   async create(@Headers("x-organization-id") organizationId: string | undefined, @Body() body: { planCode?: string; payerEmail?: string; idempotencyKey?: string }) {
