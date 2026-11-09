@@ -1,5 +1,5 @@
 import type { DatabaseClient } from "@saas-lead/database";
-import type { InboxEvent, InboxStore, NumberDirectory } from "./webhook-inbox.js";
+import type { InboxEvent, InboxInsertResult, InboxStore, NumberDirectory } from "./webhook-inbox.js";
 
 export class PrismaWebhookStore implements InboxStore, NumberDirectory {
   constructor(private readonly database: DatabaseClient) {}
@@ -12,20 +12,26 @@ export class PrismaWebhookStore implements InboxStore, NumberDirectory {
     return number?.organizationId;
   }
 
-  async insert(event: InboxEvent): Promise<"inserted" | "duplicate"> {
+  async insert(event: InboxEvent): Promise<InboxInsertResult> {
     try {
-      await this.database.webhookEvent.create({
+      const created = await this.database.webhookEvent.create({
         data: {
           externalId: event.externalId,
           organizationId: event.organizationId,
           numberId: await this.resolveNumberId(event.phoneNumberId, event.organizationId),
           payload: event.payload as object,
         },
+        select: { id: true },
       });
-      return "inserted";
+      return { status: "inserted", eventId: created.id };
     } catch (error) {
-      if (isUniqueViolation(error)) return "duplicate";
-      throw error;
+      if (!isUniqueViolation(error)) throw error;
+      const existing = await this.database.webhookEvent.findUnique({
+        where: { externalId: event.externalId },
+        select: { id: true },
+      });
+      if (!existing) throw error;
+      return { status: "duplicate", eventId: existing.id };
     }
   }
 

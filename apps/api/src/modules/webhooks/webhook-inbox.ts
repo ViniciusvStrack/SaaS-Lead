@@ -1,9 +1,12 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
 export interface InboxEvent { externalId: string; organizationId: string; phoneNumberId: string; payload: unknown }
-export interface InboxStore { insert(event: InboxEvent): Promise<"inserted" | "duplicate"> }
+export interface InboxInsertResult { status: "inserted" | "duplicate"; eventId: string }
+export interface InboxStore { insert(event: InboxEvent): Promise<InboxInsertResult> }
 export interface NumberDirectory { findOrganizationId(phoneNumberId: string): Promise<string | undefined> }
-export type AcceptResult = { accepted: true; duplicate: boolean } | { accepted: false; reason: string };
+export type AcceptResult =
+  | { accepted: true; duplicate: boolean; eventId: string; organizationId: string }
+  | { accepted: false; reason: string };
 
 export class WebhookInbox {
   constructor(
@@ -23,7 +26,7 @@ export class WebhookInbox {
     const organizationId = await this.numbers.findOrganizationId(identity.phoneNumberId);
     if (!organizationId) return { accepted: false, reason: "unknown_phone_number" };
     const result = await this.store.insert({ ...identity, organizationId, payload });
-    return { accepted: true, duplicate: result === "duplicate" };
+    return { accepted: true, duplicate: result.status === "duplicate", eventId: result.eventId, organizationId };
   }
 
   private verifySignature(rawBody: Buffer, signature: string | undefined): boolean {
@@ -47,10 +50,14 @@ function extractIdentity(payload: unknown): { externalId: string; phoneNumberId:
 
 export class InMemoryInboxStore implements InboxStore {
   readonly events = new Map<string, InboxEvent>();
-  async insert(event: InboxEvent): Promise<"inserted" | "duplicate"> {
-    if (this.events.has(event.externalId)) return "duplicate";
+  private readonly ids = new Map<string, string>();
+  async insert(event: InboxEvent): Promise<InboxInsertResult> {
+    const existingId = this.ids.get(event.externalId);
+    if (existingId) return { status: "duplicate", eventId: existingId };
+    const eventId = randomUUID();
     this.events.set(event.externalId, event);
-    return "inserted";
+    this.ids.set(event.externalId, eventId);
+    return { status: "inserted", eventId };
   }
 }
 
