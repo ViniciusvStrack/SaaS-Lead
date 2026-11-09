@@ -9,11 +9,11 @@ Execute uma fase por vez. Cada tarefa deve ter escopo pequeno, revisão de diff 
 - [ ] Definir o nicho do beta.
 - [ ] Validar a proposta de valor com 3–5 empresas.
 - [x] Fixar Node 24 e pnpm 11.22 no projeto.
-- [ ] Fazer instalação limpa com lockfile.
+- [x] Fazer instalação limpa com lockfile.
 - [ ] Fazer lint passar.
-- [ ] Fazer typecheck passar.
+- [x] Fazer typecheck passar.
 - [ ] Fazer testes passarem.
-- [ ] Fazer build passar.
+- [x] Fazer build passar.
 - [ ] Corrigir encoding e referências quebradas da documentação.
 
 ## Fase 1 — Persistência e wiring de produção
