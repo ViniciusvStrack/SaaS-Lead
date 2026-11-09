@@ -118,6 +118,9 @@ importers:
       '@saas-lead/policy':
         specifier: workspace:*
         version: link:../../packages/policy
+      '@saas-lead/whatsapp':
+        specifier: workspace:*
+        version: link:../../packages/whatsapp
       bullmq:
         specifier: 6.3.11
         version: 6.3.11(pg@8.16.3)
