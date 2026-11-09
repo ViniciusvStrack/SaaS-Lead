@@ -1,3 +1,9 @@
+export interface OpportunitySuggestion {
+  content: string;
+  status: string;
+  createdAt: string;
+}
+
 export interface OpportunityItem {
   id: string;
   contactName: string;
@@ -7,6 +13,7 @@ export interface OpportunityItem {
   knownValue: string | null;
   evidence: string[];
   ruleVersion: string;
+  suggestion?: OpportunitySuggestion | null;
 }
 
 export type OpportunitiesResult =
