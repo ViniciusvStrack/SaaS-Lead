@@ -8,6 +8,6 @@ import { AppModule } from "./app.module.js";
 
 const config = loadConfig(process.env);
 const logger = createLogger(withCorrelation({}));
-const app = await NestFactory.create(AppModule);
+const app = await NestFactory.create(AppModule, { rawBody: true });
 await app.listen(Number(process.env.API_PORT ?? 3001));
 logger.info("api ready", { nodeEnv: config.nodeEnv });

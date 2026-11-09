@@ -5,10 +5,11 @@ import { createConnectivityProbe } from "./connectivity-probe.js";
 import { OrganizationsModule } from "./modules/organizations/organizations.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { OpportunitiesModule } from "./modules/opportunities/opportunities.module.js";
+import { WebhooksModule } from "./modules/webhooks/webhooks.module.js";
 import { DATABASE_PROBE, ReadinessService, REDIS_PROBE } from "./readiness.service.js";
 
 @Module({
-  imports: [AuthModule, OrganizationsModule, OpportunitiesModule],
+  imports: [AuthModule, OrganizationsModule, OpportunitiesModule, WebhooksModule],
   controllers: [HealthController],
   providers: [
     ReadinessService,
