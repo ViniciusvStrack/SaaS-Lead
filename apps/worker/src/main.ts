@@ -8,12 +8,14 @@ import { createBullMqWorkerFactory } from "./bullmq-worker.factory.js";
 import { NormalizeInboundProcessor } from "./processors/normalize-inbound.processor.js";
 import { PrismaAnalysisRuntime } from "./processors/prisma-analysis.runtime.js";
 import { PrismaOpportunityRuntime } from "./processors/prisma-opportunity.runtime.js";
+import { PrismaReconcileRuntime } from "./processors/prisma-reconcile.runtime.js";
 import { PrismaSendRuntime } from "./processors/prisma-send.runtime.js";
 import { MetaSendProvider } from "./processors/meta-send.provider.js";
 import { PrismaSuggestionRuntime } from "./processors/prisma-suggestion.runtime.js";
 import { PrismaConversationStore } from "./processors/prisma-conversation.store.js";
 import { BullMqAnalysisQueue, conversationAnalyzeQueue } from "./queues/conversation-analysis.queue.js";
 import { BullMqOpportunityQueue, opportunityDetectQueue } from "./queues/opportunity-detect.queue.js";
+import { messageReconcileQueue } from "./queues/outbound.queues.js";
 import { createWorkerHandlers } from "./worker-handlers.js";
 import { validateWorkerEnv } from "./worker-env.js";
 import { WorkerRuntime } from "./worker-runtime.js";
@@ -37,9 +39,10 @@ const send = new PrismaSendRuntime(
   new MetaSendProvider(database, config.metaGraphApiVersion, process.env.META_ACCESS_TOKEN ?? ""),
   policy,
 );
-const runtime = new WorkerRuntime(createBullMqWorkerFactory(workerEnv.redisUrl), createWorkerHandlers(normalize, analyze, analysisQueue, opportunityQueue, detect, suggest, send), (error) => logger.info("worker queue error", error));
+const reconcile = new PrismaReconcileRuntime(database);
+const runtime = new WorkerRuntime(createBullMqWorkerFactory(workerEnv.redisUrl), createWorkerHandlers(normalize, analyze, analysisQueue, opportunityQueue, detect, suggest, send, reconcile), (error) => logger.info("worker queue error", error));
 runtime.start();
-logger.info("worker ready", { nodeEnv: config.nodeEnv, queues: ["webhook.normalize", conversationAnalyzeQueue, opportunityDetectQueue, "message.send"] });
+logger.info("worker ready", { nodeEnv: config.nodeEnv, queues: ["webhook.normalize", conversationAnalyzeQueue, opportunityDetectQueue, "message.send", messageReconcileQueue] });
 
 let closing = false;
 const shutdown = async (signal: string) => {
