@@ -35,13 +35,12 @@ export function OpportunityDetailView({ result }: { result: OpportunityResult })
     setApproveStatus("loading");
     setApproveError(null);
 
-    const extendedItem = item as unknown as { conversationId: string; suggestionId?: string };
     const body = {
-      conversationId: extendedItem.conversationId,
+      conversationId: item.conversationId,
       content: suggestion.content,
-      idempotencyKey: `approve-${item.id}-${extendedItem.suggestionId ?? item.id}`,
+      idempotencyKey: `approve-${item.id}-${item.suggestionId ?? item.id}`,
       opportunityId: item.id,
-      suggestionId: extendedItem.suggestionId,
+      suggestionId: item.suggestionId,
     };
 
     try {

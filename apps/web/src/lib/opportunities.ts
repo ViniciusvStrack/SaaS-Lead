@@ -6,6 +6,7 @@ export interface OpportunitySuggestion {
 
 export interface OpportunityItem {
   id: string;
+  conversationId: string;
   contactName: string;
   type: string;
   priority: string;
@@ -14,6 +15,7 @@ export interface OpportunityItem {
   evidence: string[];
   ruleVersion: string;
   suggestion?: OpportunitySuggestion | null;
+  suggestionId?: string;
 }
 
 export type OpportunitiesResult =
