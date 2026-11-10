@@ -6,7 +6,7 @@ import { OpportunitiesView } from "./page.js";
 
 describe("opportunities page", () => {
   it("shows known value, evidence and does not claim unproven revenue", () => {
-    const html = renderToStaticMarkup(createElement(OpportunitiesView, { result: { status: "ready", items: [{ id: "opp-1", contactName: "Cliente A", type: "COMPANY_NO_RESPONSE", priority: "URGENT", status: "OPEN", knownValue: null, evidence: ["mensagem sem resposta"], ruleVersion: "opportunity-rules.v1" }] } }));
+    const html = renderToStaticMarkup(createElement(OpportunitiesView, { result: { status: "ready", items: [{ id: "opp-1", contactName: "Cliente A", type: "COMPANY_NO_RESPONSE", priority: "URGENT", status: "OPEN", knownValue: null, evidence: ["mensagem sem resposta"], ruleVersion: "opportunity-rules.v1", conversationId: "conv-1" }] } }));
     expect(html).toContain("Oportunidades");
     expect(html).toContain("Valor conhecido");
     expect(html).toContain("Motivo identificado");

@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/re
 import React from "react";
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { OpportunityDetailView } from "./page.js";
+import type { OpportunityItem } from "../../../../lib/opportunities";
 
 beforeEach(() => {
   cleanup();
@@ -14,7 +15,7 @@ afterEach(() => {
 
 describe("opportunity detail", () => {
   it("mostra evidência real sem controles de envio fictícios", () => {
-    const item: unknown = {
+    const item: OpportunityItem = {
       id: "opp-1",
       contactName: "Cliente A",
       type: "COMPANY_NO_RESPONSE",
@@ -27,7 +28,7 @@ describe("opportunity detail", () => {
     };
 
     const { container } = render(
-      <OpportunityDetailView result={{ status: "ready", item: item as never }} />,
+      <OpportunityDetailView result={{ status: "ready", item: item }} />,
     );
     expect(container).toHaveTextContent("Cliente A");
     expect(container).toHaveTextContent("Por que identificamos");
@@ -37,7 +38,7 @@ describe("opportunity detail", () => {
   });
 
   it("mostra a sugestão de próxima ação quando o worker já gerou", () => {
-    const item: unknown = {
+    const item: OpportunityItem = {
       id: "opp-1",
       contactName: "Cliente A",
       type: "COMPANY_NO_RESPONSE",
@@ -55,7 +56,7 @@ describe("opportunity detail", () => {
     };
 
     const { container } = render(
-      <OpportunityDetailView result={{ status: "ready", item: item as never }} />,
+      <OpportunityDetailView result={{ status: "ready", item: item }} />,
     );
     expect(container).toHaveTextContent("Responder agora confirmando disponibilidade.");
     expect(container).toHaveTextContent("Sugestão gerada pela IA (rascunho)");
@@ -72,7 +73,7 @@ describe("opportunity detail", () => {
       },
     );
 
-    const item: unknown = {
+    const item: OpportunityItem = {
       id: "opp-1",
       contactName: "Cliente A",
       type: "COMPANY_NO_RESPONSE",
@@ -90,7 +91,7 @@ describe("opportunity detail", () => {
       },
     };
 
-    render(<OpportunityDetailView result={{ status: "ready", item: item as never }} />);
+    render(<OpportunityDetailView result={{ status: "ready", item: item }} />);
 
     fireEvent.click(screen.getByText("Aprovar e enviar"));
 
@@ -114,7 +115,7 @@ describe("opportunity detail", () => {
       },
     );
 
-    const item: unknown = {
+    const item: OpportunityItem = {
       id: "opp-1",
       contactName: "Cliente A",
       type: "COMPANY_NO_RESPONSE",
@@ -131,7 +132,7 @@ describe("opportunity detail", () => {
       },
     };
 
-    render(<OpportunityDetailView result={{ status: "ready", item: item as never }} />);
+    render(<OpportunityDetailView result={{ status: "ready", item: item }} />);
 
     fireEvent.click(screen.getByText("Aprovar e enviar"));
 
@@ -146,7 +147,7 @@ describe("opportunity detail", () => {
       async () => new Response(JSON.stringify({ error: "não autenticado" }), { status: 401 }),
     );
 
-    const item: unknown = {
+    const item: OpportunityItem = {
       id: "opp-1",
       contactName: "Cliente A",
       type: "COMPANY_NO_RESPONSE",
@@ -163,7 +164,7 @@ describe("opportunity detail", () => {
       },
     };
 
-    render(<OpportunityDetailView result={{ status: "ready", item: item as never }} />);
+    render(<OpportunityDetailView result={{ status: "ready", item: item }} />);
 
     fireEvent.click(screen.getByText("Aprovar e enviar"));
 
@@ -175,7 +176,7 @@ describe("opportunity detail", () => {
       throw new TypeError("rede caiu");
     });
 
-    const item: unknown = {
+    const item: OpportunityItem = {
       id: "opp-1",
       contactName: "Cliente A",
       type: "COMPANY_NO_RESPONSE",
@@ -192,7 +193,7 @@ describe("opportunity detail", () => {
       },
     };
 
-    render(<OpportunityDetailView result={{ status: "ready", item: item as never }} />);
+    render(<OpportunityDetailView result={{ status: "ready", item: item }} />);
 
     fireEvent.click(screen.getByText("Aprovar e enviar"));
 
