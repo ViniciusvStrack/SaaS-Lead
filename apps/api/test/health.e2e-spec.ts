@@ -4,8 +4,19 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { AppModule } from "../src/app.module.js";
 import { DATABASE_PROBE, REDIS_PROBE } from "../src/readiness.service.js";
+
+process.env.DATABASE_URL ??= "postgresql://postgres:postgres@localhost:5432/saas_lead";
+process.env.REDIS_URL ??= "redis://localhost:6379";
+process.env.META_GRAPH_API_VERSION ??= "v20.0";
+process.env.META_APP_SECRET ??= "test-meta-secret";
+process.env.META_WEBHOOK_VERIFY_TOKEN ??= "test-webhook-token";
+process.env.MERCADOPAGO_ACCESS_TOKEN ??= "test-mp-token";
+process.env.MERCADOPAGO_BACK_URL ??= "http://localhost:3000/billing/return";
+process.env.MERCADOPAGO_WEBHOOK_SECRET ??= "test-mp-webhook-secret";
+process.env.MERCADOPAGO_PLAN_IDS_JSON ??= '{"essential":"essential","professional":"professional","performance":"performance","jarvis":"jarvis"}';
+
+const { AppModule } = await import("../src/app.module.js");
 
 describe("health endpoints", () => {
   let close: (() => Promise<void>) | undefined;
@@ -34,19 +45,20 @@ describe("health endpoints", () => {
   it("returns readiness details when dependencies are available", async () => {
     const app = await createTestApp(true, true);
 
-    await request(app.getHttpServer()).get("/ready").expect(200, {
-      ready: true,
-      dependencies: { database: true, redis: true },
-    });
+    const response = await request(app.getHttpServer()).get("/ready").expect(200);
+    expect(response.body.ready).toBe(true);
+    expect(response.body.dependencies).toEqual({ database: true, redis: true });
+    expect(response.body.latencyMs.database).toBeTypeOf("number");
+    expect(response.body.latencyMs.redis).toBeTypeOf("number");
   });
 
   it("returns 503 and dependency details when Redis is unavailable", async () => {
     const app = await createTestApp(true, false);
     const response = await request(app.getHttpServer()).get("/ready").expect(503);
 
-    expect(response.body).toEqual({
-      ready: false,
-      dependencies: { database: true, redis: false },
-    });
+    expect(response.body.ready).toBe(false);
+    expect(response.body.dependencies).toEqual({ database: true, redis: false });
+    expect(response.body.latencyMs.database).toBeTypeOf("number");
+    expect(response.body.latencyMs.redis).toBeTypeOf("number");
   });
 });
