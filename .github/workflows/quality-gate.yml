@@ -1,0 +1,49 @@
+name: Quality Gate
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: quality-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-and-unit:
+    name: Typecheck and isolated tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Prisma config requires a syntactically valid URL during typecheck;
+      # this gate never connects to the database.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_lead
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Typecheck workspace
+        run: pnpm typecheck
+
+      - name: Run isolated package tests
+        run: >-
+          pnpm --filter @saas-lead/config
+          --filter @saas-lead/ai
+          --filter @saas-lead/policy
+          --filter @saas-lead/whatsapp
+          --filter @saas-lead/observability
+          test
