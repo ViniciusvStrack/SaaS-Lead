@@ -56,3 +56,61 @@ export function parseMercadoPagoPlanIds(value: string): Record<string, string> {
 export function idempotencyKeyForSubscription(organizationId: string, planCode: string): string {
   return createHash("sha256").update(`${organizationId}:${planCode}`).digest("hex");
 }
+
+export interface MercadoPagoEventTimestampValidation {
+  valid: boolean;
+  reason?: string;
+}
+
+export interface MercadoPagoReplayProtectionOptions {
+  maxAgeMinutes?: number;
+  maxFutureMinutes?: number;
+}
+
+/**
+ * Valida o `date_created` de um evento de webhook do Mercado Pago para proteção contra replay temporal.
+ *
+ * Regras:
+ * - `date_created` deve existir e ser uma data válida (não null/undefined/vazio e não NaN).
+ * - Não pode ser mais antigo que `maxAgeMinutes` (padrão 5 min) do horário atual.
+ * - Não pode estar no futuro além de `maxFutureMinutes` (padrão 5 min).
+ */
+export function validateMercadoPagoEventTimestamp(
+  dateCreated: unknown,
+  options: MercadoPagoReplayProtectionOptions = {},
+  referenceTime: number = Date.now(),
+): MercadoPagoEventTimestampValidation {
+  const maxAgeMinutes = options.maxAgeMinutes ?? 5;
+  const maxFutureMinutes = options.maxFutureMinutes ?? 5;
+  const now = referenceTime;
+
+  if (dateCreated === undefined || dateCreated === null || dateCreated === "") {
+    return { valid: false, reason: "date_created is required" };
+  }
+
+  if (
+    typeof dateCreated !== "string" &&
+    typeof dateCreated !== "number" &&
+    !(dateCreated instanceof Date)
+  ) {
+    return { valid: false, reason: "date_created is invalid" };
+  }
+
+  const eventTime = new Date(dateCreated).getTime();
+  if (Number.isNaN(eventTime)) {
+    return { valid: false, reason: "date_created is invalid" };
+  }
+
+  const maxAgeMs = maxAgeMinutes * 60 * 1000;
+  const maxFutureMs = maxFutureMinutes * 60 * 1000;
+
+  if (now - eventTime > maxAgeMs) {
+    return { valid: false, reason: "date_created is too old (replay protection)" };
+  }
+
+  if (eventTime - now > maxFutureMs) {
+    return { valid: false, reason: "date_created is in the future" };
+  }
+
+  return { valid: true };
+}

@@ -1,11 +1,11 @@
-import { Body, Controller, Get, Headers, HttpCode, Inject, Post, Query, UnauthorizedException } from "@nestjs/common";
+import { Body, BadRequestException, Controller, Get, Headers, HttpCode, Inject, Post, Query, UnauthorizedException } from "@nestjs/common";
 import type { DatabaseClient } from "@saas-lead/database";
 import { SessionService } from "../auth/session.service.js";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { MercadoPagoProvider } from "./mercadopago.provider.js";
-import { idempotencyKeyForSubscription } from "./mercadopago.provider.js";
+import { idempotencyKeyForSubscription, validateMercadoPagoEventTimestamp } from "./mercadopago.provider.js";
 import type { PrismaSubscriptionStore } from "./prisma-subscription.store.js";
-import { SubscriptionEntitlementService } from "./subscription-entitlement.service.js";
+import type { SubscriptionEntitlementService } from "./subscription-entitlement.service.js";
 
 @Controller("subscriptions")
 export class SubscriptionsController {
@@ -70,6 +70,8 @@ export class SubscriptionsController {
   async webhook(@Query("data.id") dataId: string | undefined, @Query("id") eventId: string | undefined, @Headers("x-signature") signature: string | undefined, @Headers("x-request-id") requestId: string | undefined, @Body() body: { id?: string; date_created?: string; data?: { id?: string }; external_reference?: string; action?: string; type?: string }) {
     const resourceId = dataId ?? body.data?.id;
     if (!resourceId || !eventId || !this.verifySignature(signature, requestId, resourceId)) throw new UnauthorizedException("Invalid Mercado Pago webhook signature");
+    const timestamp = validateMercadoPagoEventTimestamp(body.date_created);
+    if (!timestamp.valid) throw new BadRequestException(timestamp.reason ?? "Invalid Mercado Pago webhook timestamp");
     const subscription = await this.provider.getSubscription(resourceId);
     const organizationId = subscription.organizationId;
     if (!organizationId) return { received: true, ignored: true };
