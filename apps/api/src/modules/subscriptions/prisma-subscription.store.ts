@@ -29,12 +29,33 @@ export class PrismaSubscriptionStore {
   }
 
   async recordEvent(input: { externalEventId: string; externalSubscriptionId: string; eventCreatedAt: Date; payload: unknown; status: SubscriptionStatus; organizationId: string }) {
-    const existing = await this.database.billingEvent.findUnique({ where: { provider_externalEventId: { provider: "mercadopago", externalEventId: input.externalEventId } } });
+    const where = { provider_externalEventId: { provider: "mercadopago", externalEventId: input.externalEventId } };
+
+    // Fast-path de leitura: evento já processado? Retorna duplicata sem gravar nada.
+    const existing = await this.database.billingEvent.findUnique({ where });
     if (existing) return { duplicate: true } as const;
-    await this.database.$transaction(async (transaction) => {
-      await transaction.billingEvent.create({ data: { provider: "mercadopago", externalEventId: input.externalEventId, eventCreatedAt: input.eventCreatedAt, status: "PROCESSED", processedAt: new Date(), payloadRef: JSON.stringify(input.payload) } });
-      await transaction.subscription.updateMany({ where: { organizationId: input.organizationId, provider: "mercadopago", externalSubscriptionId: input.externalSubscriptionId }, data: { status: input.status, lastEventAt: input.eventCreatedAt } });
+
+    // Upsert atômico sobre a unique constraint @@unique([provider, externalEventId]).
+    // Garante um único BillingEvent mesmo sob concorrência, sem erro de unique constraint:
+    // se outro processo criou entre o findUnique e aqui, o upsert não cria nem falha.
+    await this.database.billingEvent.upsert({
+      where,
+      create: {
+        provider: "mercadopago",
+        externalEventId: input.externalEventId,
+        eventCreatedAt: input.eventCreatedAt,
+        status: "PROCESSED",
+        processedAt: new Date(),
+        payloadRef: JSON.stringify(input.payload),
+      },
+      update: {}, // idempotente: não altera evento já existente
     });
+
+    await this.database.subscription.updateMany({
+      where: { organizationId: input.organizationId, provider: "mercadopago", externalSubscriptionId: input.externalSubscriptionId },
+      data: { status: input.status, lastEventAt: input.eventCreatedAt },
+    });
+
     return { duplicate: false } as const;
   }
 }
