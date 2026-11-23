@@ -18,6 +18,8 @@ export class OrganizationsService {
       id: `settings-${tenant.organizationId}`,
       organizationId: tenant.organizationId,
       version: 0,
+      name: "",
+      timezone: "America/Sao_Paulo",
     };
   }
 

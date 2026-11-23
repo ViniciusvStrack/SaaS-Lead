@@ -5,6 +5,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { MercadoPagoProvider } from "./mercadopago.provider.js";
 import { idempotencyKeyForSubscription } from "./mercadopago.provider.js";
 import type { PrismaSubscriptionStore } from "./prisma-subscription.store.js";
+<<<<<<< HEAD
+=======
+import { SubscriptionEntitlementService } from "./subscription-entitlement.service.js";
+>>>>>>> origin/feat/mvp-implementation
 
 @Controller("subscriptions")
 export class SubscriptionsController {
@@ -14,6 +18,10 @@ export class SubscriptionsController {
     @Inject("MERCADOPAGO_WEBHOOK_SECRET") private readonly webhookSecret: string,
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject("SUBSCRIPTIONS_DATABASE") private readonly database: DatabaseClient,
+<<<<<<< HEAD
+=======
+    private readonly entitlements: SubscriptionEntitlementService,
+>>>>>>> origin/feat/mvp-implementation
   ) {}
 
   @Get("current")
@@ -24,6 +32,21 @@ export class SubscriptionsController {
     return { subscription: { id: subscription.id, planCode: subscription.plan.code, planName: subscription.plan.name, status: subscription.status, trialEndsAt: subscription.trialEndsAt, currentPeriodEndsAt: subscription.currentPeriodEndsAt, createdAt: subscription.createdAt } };
   }
 
+<<<<<<< HEAD
+=======
+  @Get("usage")
+  async usage(@Headers("cookie") cookie?: string) {
+    const organizationId = await this.organizationId(cookie);
+    const subscription = await this.database.subscription.findFirst({ where: { organizationId }, include: { plan: true }, orderBy: { createdAt: "desc" } });
+    const start = new Date(); start.setUTCDate(1); start.setUTCHours(0, 0, 0, 0);
+    const rows = await this.database.usageRecord.groupBy({ by: ["metric"], where: { organizationId, occurredAt: { gte: start } }, _sum: { quantity: true } });
+    const entitlements = subscription?.plan.entitlements && typeof subscription.plan.entitlements === "object" ? subscription.plan.entitlements as Record<string, unknown> : {};
+    const usage = Object.fromEntries(rows.map((row) => [row.metric, row._sum.quantity ?? 0]));
+    const limits = Object.fromEntries(Object.entries(entitlements).filter(([, value]) => typeof value === "number"));
+    return { periodStart: start.toISOString(), planCode: subscription?.plan.code ?? null, usage, limits };
+  }
+
+>>>>>>> origin/feat/mvp-implementation
   @Post()
   async create(@Headers("cookie") cookie: string | undefined, @Body() body: { planCode?: string; payerEmail?: string; idempotencyKey?: string }) {
     const organizationId = await this.organizationId(cookie);
@@ -36,6 +59,16 @@ export class SubscriptionsController {
     return { id: subscription.id, status: subscription.status, externalSubscriptionId: subscription.externalSubscriptionId, ...(external.checkoutUrl ? { checkoutUrl: external.checkoutUrl } : {}) };
   }
 
+<<<<<<< HEAD
+=======
+  @Post("authorize")
+  async authorize(@Headers("cookie") cookie: string | undefined, @Body() body: { action?: string }) {
+    const organizationId = await this.organizationId(cookie);
+    if (!body.action || !/^[a-z][a-z0-9_.-]{1,80}$/.test(body.action)) throw new UnauthorizedException("action is required");
+    return this.entitlements.authorize({ organizationId, action: body.action });
+  }
+
+>>>>>>> origin/feat/mvp-implementation
   private async organizationId(cookie: string | undefined): Promise<string> {
     const token = cookie?.split(";").map((part) => part.trim()).find((part) => part.startsWith("saas_lead_session="))?.slice("saas_lead_session=".length);
     const session = await this.sessions.requireSession(token);
