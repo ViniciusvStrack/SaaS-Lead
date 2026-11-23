@@ -11,6 +11,15 @@ Leia este arquivo **e** o quadro de coordenação antes de qualquer alteração.
 - Esses arquivos são **locais e não versionados** (estão em `.git/info/exclude`).
   Não commite, não faça `git add` neles e não os mova para dentro do repo.
 
+## Coordenação central
+
+- O Codex atua como coordenador principal do projeto.
+- O usuário fala apenas com o Codex; o Codex distribui tarefas ao OpenCode e aos subagentes.
+- O Codex deve registrar cada tarefa no `BOARD.md`, reservar arquivos, acompanhar o inbox do OpenCode e consolidar os resultados.
+- O OpenCode trabalha como executor especializado em tarefas delegadas e responde pelo inbox.
+- Nenhuma IA deve duplicar uma tarefa ou editar arquivos reservados por outra.
+- Ao concluir uma tarefa, o coordenador deve revisar o diff, executar as validações e registrar o resultado antes de iniciar a próxima.
+
 ## Antes de começar qualquer tarefa
 
 1. Leia `BOARD.md` e as mensagens não lidas no seu inbox.

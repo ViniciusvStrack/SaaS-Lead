@@ -5,6 +5,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { MercadoPagoProvider } from "./mercadopago.provider.js";
 import { idempotencyKeyForSubscription } from "./mercadopago.provider.js";
 import type { PrismaSubscriptionStore } from "./prisma-subscription.store.js";
+import { SubscriptionEntitlementService } from "./subscription-entitlement.service.js";
 
 @Controller("subscriptions")
 export class SubscriptionsController {
@@ -14,6 +15,7 @@ export class SubscriptionsController {
     @Inject("MERCADOPAGO_WEBHOOK_SECRET") private readonly webhookSecret: string,
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject("SUBSCRIPTIONS_DATABASE") private readonly database: DatabaseClient,
+    private readonly entitlements: SubscriptionEntitlementService,
   ) {}
 
   @Get("current")
@@ -22,6 +24,18 @@ export class SubscriptionsController {
     const subscription = await this.store.findByOrganization(organizationId);
     if (!subscription) return { subscription: null };
     return { subscription: { id: subscription.id, planCode: subscription.plan.code, planName: subscription.plan.name, status: subscription.status, trialEndsAt: subscription.trialEndsAt, currentPeriodEndsAt: subscription.currentPeriodEndsAt, createdAt: subscription.createdAt } };
+  }
+
+  @Get("usage")
+  async usage(@Headers("cookie") cookie?: string) {
+    const organizationId = await this.organizationId(cookie);
+    const subscription = await this.database.subscription.findFirst({ where: { organizationId }, include: { plan: true }, orderBy: { createdAt: "desc" } });
+    const start = new Date(); start.setUTCDate(1); start.setUTCHours(0, 0, 0, 0);
+    const rows = await this.database.usageRecord.groupBy({ by: ["metric"], where: { organizationId, occurredAt: { gte: start } }, _sum: { quantity: true } });
+    const entitlements = subscription?.plan.entitlements && typeof subscription.plan.entitlements === "object" ? subscription.plan.entitlements as Record<string, unknown> : {};
+    const usage = Object.fromEntries(rows.map((row) => [row.metric, row._sum.quantity ?? 0]));
+    const limits = Object.fromEntries(Object.entries(entitlements).filter(([, value]) => typeof value === "number"));
+    return { periodStart: start.toISOString(), planCode: subscription?.plan.code ?? null, usage, limits };
   }
 
   @Post()
@@ -34,6 +48,13 @@ export class SubscriptionsController {
     const external = await this.provider.createSubscription({ organizationId, planCode: body.planCode, payerEmail: body.payerEmail, idempotencyKey });
     const subscription = await this.store.create({ organizationId, planCode: body.planCode, payerEmail: body.payerEmail, idempotencyKey, externalSubscriptionId: external.externalSubscriptionId, ...(external.checkoutUrl ? { checkoutUrl: external.checkoutUrl } : {}) });
     return { id: subscription.id, status: subscription.status, externalSubscriptionId: subscription.externalSubscriptionId, ...(external.checkoutUrl ? { checkoutUrl: external.checkoutUrl } : {}) };
+  }
+
+  @Post("authorize")
+  async authorize(@Headers("cookie") cookie: string | undefined, @Body() body: { action?: string }) {
+    const organizationId = await this.organizationId(cookie);
+    if (!body.action || !/^[a-z][a-z0-9_.-]{1,80}$/.test(body.action)) throw new UnauthorizedException("action is required");
+    return this.entitlements.authorize({ organizationId, action: body.action });
   }
 
   private async organizationId(cookie: string | undefined): Promise<string> {

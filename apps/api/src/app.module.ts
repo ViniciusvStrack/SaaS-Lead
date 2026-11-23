@@ -7,10 +7,12 @@ import { AuthModule } from "./modules/auth/auth.module.js";
 import { OpportunitiesModule } from "./modules/opportunities/opportunities.module.js";
 import { WebhooksModule } from "./modules/webhooks/webhooks.module.js";
 import { SubscriptionsModule } from "./modules/subscriptions/subscriptions.module.js";
+import { BusinessSettingsModule } from "./modules/business-settings/business-settings.module.js";
+import { WhatsAppModule } from "./modules/whatsapp/whatsapp.module.js";
 import { DATABASE_PROBE, ReadinessService, REDIS_PROBE } from "./readiness.service.js";
 
 @Module({
-  imports: [AuthModule, OrganizationsModule, OpportunitiesModule, WebhooksModule, SubscriptionsModule],
+  imports: [AuthModule, OrganizationsModule, OpportunitiesModule, WebhooksModule, SubscriptionsModule, BusinessSettingsModule, WhatsAppModule],
   controllers: [HealthController],
   providers: [
     ReadinessService,
