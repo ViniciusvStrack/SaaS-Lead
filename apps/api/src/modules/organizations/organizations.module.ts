@@ -1,7 +1,10 @@
 import { Inject, Module, type OnModuleDestroy } from "@nestjs/common";
 
 import { AuditModule } from "../audit/audit.module.js";
+<<<<<<< HEAD
+=======
 import { AuthModule } from "../auth/auth.module.js";
+>>>>>>> origin/feat/mvp-implementation
 import { createDatabaseClient, type DatabaseClient } from "@saas-lead/database";
 import type { AuditService } from "../audit/audit.service.js";
 import { PrismaOrganizationRepository } from "./prisma-organization.repository.js";

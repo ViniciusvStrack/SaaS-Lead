@@ -11,6 +11,8 @@ Leia este arquivo **e** o quadro de coordenação antes de qualquer alteração.
 - Esses arquivos são **locais e não versionados** (estão em `.git/info/exclude`).
   Não commite, não faça `git add` neles e não os mova para dentro do repo.
 
+<<<<<<< HEAD
+=======
 ## Coordenação central
 
 - O Codex atua como coordenador principal do projeto.
@@ -20,6 +22,7 @@ Leia este arquivo **e** o quadro de coordenação antes de qualquer alteração.
 - Nenhuma IA deve duplicar uma tarefa ou editar arquivos reservados por outra.
 - Ao concluir uma tarefa, o coordenador deve revisar o diff, executar as validações e registrar o resultado antes de iniciar a próxima.
 
+>>>>>>> origin/feat/mvp-implementation
 ## Antes de começar qualquer tarefa
 
 1. Leia `BOARD.md` e as mensagens não lidas no seu inbox.

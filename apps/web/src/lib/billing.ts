@@ -1,5 +1,7 @@
 export type CurrentSubscription = { id: string; planCode: string; planName: string; status: string; trialEndsAt: string | null; currentPeriodEndsAt: string | null; createdAt: string };
 export type BillingResult = { status: "ready"; subscription: CurrentSubscription | null } | { status: "unauthenticated" | "unavailable" };
+<<<<<<< HEAD
+=======
 export type UsageSummary = { periodStart: string; planCode: string | null; usage: Record<string, number>; limits: Record<string, number> };
 
 export async function loadUsage(fetcher: typeof fetch = fetch): Promise<UsageSummary | null> {
@@ -7,6 +9,7 @@ export async function loadUsage(fetcher: typeof fetch = fetch): Promise<UsageSum
   if (!response.ok) return null;
   return await response.json() as UsageSummary;
 }
+>>>>>>> origin/feat/mvp-implementation
 
 export async function loadCurrentSubscription(token: string | undefined, baseUrl: string | undefined, fetcher: typeof fetch = fetch): Promise<BillingResult> {
   if (!token) return { status: "unauthenticated" };

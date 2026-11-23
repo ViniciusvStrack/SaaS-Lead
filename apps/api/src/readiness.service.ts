@@ -7,6 +7,7 @@ export const REDIS_PROBE = Symbol("REDIS_PROBE");
 export interface ReadinessResult {
   ready: boolean;
   dependencies: { database: boolean; redis: boolean };
+  latencyMs: { database: number; redis: number };
 }
 
 @Injectable()
@@ -17,10 +18,12 @@ export class ReadinessService {
   ) {}
 
   async check(): Promise<ReadinessResult> {
-    const [database, redis] = await Promise.all([
-      this.databaseProbe().catch(() => false),
-      this.redisProbe().catch(() => false),
-    ]);
-    return { ready: database && redis, dependencies: { database, redis } };
+    const probe = async (check: DependencyProbe) => {
+      const started = Date.now();
+      const healthy = await check().catch(() => false);
+      return { healthy, latency: Date.now() - started };
+    };
+    const [database, redis] = await Promise.all([probe(this.databaseProbe), probe(this.redisProbe)]);
+    return { ready: database.healthy && redis.healthy, dependencies: { database: database.healthy, redis: redis.healthy }, latencyMs: { database: database.latency, redis: redis.latency } };
   }
 }

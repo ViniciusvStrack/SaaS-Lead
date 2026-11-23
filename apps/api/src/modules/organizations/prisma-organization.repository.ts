@@ -1,5 +1,8 @@
 import type { TenantContext, DatabaseClient } from "@saas-lead/database";
+<<<<<<< HEAD
+=======
 import type { BusinessHoursPeriod } from "@saas-lead/contracts";
+>>>>>>> origin/feat/mvp-implementation
 import type { BusinessSettingsRecord, BusinessSettingsUpdate } from "./organization.repository.js";
 import { OrganizationRepository } from "./organization.repository.js";
 
@@ -8,15 +11,43 @@ export class PrismaOrganizationRepository extends OrganizationRepository {
 
   async findSettings(tenant: TenantContext, organizationId: string): Promise<BusinessSettingsRecord | undefined> {
     if (tenant.organizationId !== organizationId) return undefined;
+<<<<<<< HEAD
+    const settings = await this.database.businessSettings.findUnique({ where: { organizationId } });
+    return settings ? toRecord(settings) : undefined;
+=======
     const [settings, organization] = await Promise.all([
       this.database.businessSettings.findUnique({ where: { organizationId } }),
       this.database.organization.findFirst({ where: { id: organizationId, status: "ACTIVE" }, select: { id: true, name: true, timezone: true } }),
     ]);
     return organization ? toRecord(settings, organization) : undefined;
+>>>>>>> origin/feat/mvp-implementation
   }
 
   async updateSettings(tenant: TenantContext, organizationId: string, update: BusinessSettingsUpdate): Promise<BusinessSettingsRecord | undefined> {
     if (tenant.organizationId !== organizationId) return undefined;
+<<<<<<< HEAD
+    const organization = await this.database.organization.findFirst({ where: { id: organizationId, status: "ACTIVE" }, select: { id: true } });
+    if (!organization) return undefined;
+    const settings = await this.database.businessSettings.upsert({
+      where: { organizationId },
+      create: { organizationId, ...update },
+      update: { ...update, version: { increment: 1 } },
+    });
+    return toRecord(settings);
+  }
+}
+
+function toRecord(settings: { id: string; organizationId: string; description: string | null; industry: string | null; tone: string | null; version: number }): BusinessSettingsRecord {
+  return {
+    id: settings.id,
+    organizationId: settings.organizationId,
+    ...(settings.description ? { description: settings.description } : {}),
+    ...(settings.industry ? { industry: settings.industry } : {}),
+    ...(settings.tone ? { tone: settings.tone } : {}),
+    version: settings.version,
+  };
+}
+=======
     const organization = await this.database.organization.findFirst({ where: { id: organizationId, status: "ACTIVE" }, select: { id: true, name: true, timezone: true } });
     if (!organization) return undefined;
     const { name, timezone, businessHours, allowDiscounts, allowedClaims, commercialPolicies, goals, ...settingsUpdate } = update;
@@ -51,3 +82,4 @@ function toRecord(settings: { id: string; organizationId: string; description: s
 }
 
 function toJson(value: unknown): any { return JSON.parse(JSON.stringify(value)); }
+>>>>>>> origin/feat/mvp-implementation
